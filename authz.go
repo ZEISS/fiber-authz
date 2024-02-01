@@ -6,7 +6,6 @@ package authz
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -21,10 +20,11 @@ type AuthzUser string
 // AuthzPermission ...
 type AuthzPermission string
 
-// String ...
-func (a AuthzPermission) String() string {
-	return string(a)
-}
+const (
+	AuthzNoPrincipial = ""
+	AuthzNoUser       = ""
+	AuthzNoPermission = ""
+)
 
 // AuthzPermissionDefaults ...
 const (
@@ -72,6 +72,13 @@ func DefaultChecker(db *gorm.DB) *defaultChecker {
 
 // Allowed ...
 func (d *defaultChecker) Allowed(ctx context.Context, principal AuthzPrincipal, user AuthzUser, permission AuthzPermission) (bool, error) {
+	var allowed int64
+	d.db.Raw("SELECT COUNT(1) FROM vw_user_principal_permissions WHERE user_id = ? AND principal_id = ? AND permission = ?", user, principal, permission).Count(&allowed)
+
+	if allowed > 0 {
+		return true, nil
+	}
+
 	return false, nil
 }
 
@@ -99,12 +106,24 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 	return fiber.ErrBadRequest
 }
 
+// SetAuthzHandler ...
+func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzUser, error)) func(c *fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
+		principal, user, err := fn(c.Context())
+		if err != nil {
+			return err
+		}
+
+		return ContextWithAuthz(c, principal, user).Next()
+	}
+}
+
 // NewProtectedHandler ...
-func NewProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler {
+func NewProtectedHandler(handler fiber.Handler, permission AuthzPermission, config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
-		principal, user, permission, err := AuthzFromContext(c)
+		principal, user, err := AuthzFromContext(c)
 		if err != nil {
 			return defaultErrorHandler(c, err)
 		}
@@ -115,7 +134,7 @@ func NewProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler 
 		}
 
 		if !allowed {
-			return c.SendStatus(404)
+			return c.SendStatus(403)
 		}
 
 		return handler(c)
@@ -123,21 +142,19 @@ func NewProtectedHandler(handler fiber.Handler, config ...Config) fiber.Handler 
 }
 
 // ContextWithAuthz ...
-func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, user AuthzUser, permission AuthzPermission) *fiber.Ctx {
-	ctx.Set(fmt.Sprint(authzPrincipial), string(principal))
-	ctx.Set(fmt.Sprint(authzUser), string(user))
-	ctx.Set(fmt.Sprint(authzPermission), string(permission))
+func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, user AuthzUser) *fiber.Ctx {
+	ctx.Locals(authzPrincipial, principal)
+	ctx.Locals(authzUser, user)
 
 	return ctx
 }
 
 // AuthzFromContext ...
-func AuthzFromContext(ctx *fiber.Ctx) (AuthzPrincipal, AuthzUser, AuthzPermission, error) {
-	principal := ctx.Get(fmt.Sprint(authzPrincipial))
-	user := ctx.Get(fmt.Sprint(authzUser))
-	permission := ctx.Get(fmt.Sprint(authzPermission))
+func AuthzFromContext(ctx *fiber.Ctx) (AuthzPrincipal, AuthzUser, error) {
+	principal := ctx.Locals(authzPrincipial)
+	user := ctx.Locals(authzUser)
 
-	return AuthzPrincipal(principal), AuthzUser(user), AuthzPermission(permission), nil
+	return principal.(AuthzPrincipal), user.(AuthzUser), nil
 }
 
 // Helper function to set default values

@@ -9,21 +9,27 @@ import (
 
 // RunMigrations ...
 func RunMigrations(db *gorm.DB) error {
-	return db.AutoMigrate(
+	err := db.AutoMigrate(
 		&Role{},
-		&Team{},
+		&Principal{},
 		&User{},
 		&Permission{},
 		&RolePermission{},
-		&UserTeam{},
-		&UserPermission{},
+		&UserPrincipal{},
 		&UserRole{},
 	)
+	if err != nil {
+		return err
+	}
+
+	query := db.Raw("SELECT A.user_id, A.principal_id, C.slug as permission FROM user_roles AS A LEFT JOIN role_permissions AS B ON A.role_id = B.role_id LEFT JOIN permissions AS C on B.permission_id = C.id;")
+
+	return db.Migrator().CreateView("vw_user_principal_permissions", gorm.ViewOption{Query: query, Replace: true})
 }
 
 // Role ...
 type Role struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
 	Name        string
 	Description string
 
@@ -34,12 +40,14 @@ type Role struct {
 	gorm.Model
 }
 
-// Team ...
-type Team struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+// Principal ...
+type Principal struct {
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
 	Name        string
 	Slug        string
 	Description *string
+
+	Users *[]Principal `gorm:"many2many:user_principals;"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -50,12 +58,13 @@ type Team struct {
 
 // User ...
 type User struct {
-	ID            uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
 	Name          string
 	Email         string
 	EmailVerified *string
 	Image         *string
-	Teams         *[]Team
+
+	Principals *[]Principal `gorm:"many2many:user_principals;"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -81,39 +90,28 @@ type Permission struct {
 type RolePermission struct {
 	ID uint `gorm:"primaryKey"`
 
-	UserID uuid.UUID
-	User   User
-
 	RoleID uuid.UUID
 	Role   Role
+
+	PermissionID uint
+	Permission   Permission
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt time.Time
 }
 
-// UserTeams ...
-type UserTeam struct {
+// UserPrincipal ...
+type UserPrincipal struct {
 	ID uint `gorm:"primaryKey"`
 
 	UserID uuid.UUID
 	User   User
 
-	TeamID uuid.UUID
-	Team   Team
+	PrincipalID uuid.UUID
+	Principal   Principal
 
 	gorm.Model
-}
-
-// UserPermission ...
-type UserPermission struct {
-	UserID uuid.UUID
-	User   User
-
-	TeamID uuid.UUID
-	Team   Team
-
-	Permission string
 }
 
 // UserRole ...
@@ -123,8 +121,8 @@ type UserRole struct {
 	UserID uuid.UUID
 	User   User
 
-	TeamID uuid.UUID
-	Team   Team
+	PrincipalID uuid.UUID
+	Principal   Principal
 
 	RoleID uuid.UUID
 	Role   Role
