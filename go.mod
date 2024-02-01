@@ -6,7 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.55.2
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	gorm.io/gorm v1.25.6
 	mvdan.cc/gofumpt v0.6.0
 )
