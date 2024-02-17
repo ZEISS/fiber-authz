@@ -80,8 +80,8 @@ func run(ctx context.Context) error {
 		log.Fatal(err)
 	}
 
-	fn := func(ctx context.Context) (authz.AuthzPrincipal, authz.AuthzUser, error) {
-		return authz.AuthzNoPrincipial, authz.AuthzNoUser, nil // this is for testing
+	fn := func(ctx context.Context) (authz.AuthzPrincipal, authz.AuthzObject, authz.AuthzAction, error) {
+		return authz.AuthzNoPrincipial, authz.AuthzNoObject, authz.AuthzNoAction, nil // this is for testing
 	}
 
 	app.Use(authz.SetAuthzHandler(fn))
@@ -91,7 +91,7 @@ func run(ctx context.Context) error {
 		return t.Execute(c.Response().BodyWriter(), struct{}{})
 	}
 
-	config := authz.Config{Checker: authz.DefaultChecker(conn)}
+	config := authz.Config{Checker: authz.NewTBAC(conn)}
 	app.Get("/", authz.NewProtectedHandler(index, authz.Read, config))
 
 	err = app.Listen(cfg.Flags.Addr)

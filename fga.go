@@ -20,11 +20,11 @@ func NewFGA(c *client.OpenFgaClient) *fga {
 // Allowed returns true if the principal is allowed to perform the action on the user.
 // Returns an error if the request fails.
 // The principal is the object, the user is the subject, and the permission is the relation.
-func (f *fga) Allowed(ctx context.Context, principal AuthzPrincipal, user AuthzUser, permission AuthzPermission) (bool, error) {
+func (f *fga) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
 	body := client.ClientCheckRequest{
-		User:     user.String(),
-		Relation: permission.String(),
-		Object:   principal.String(),
+		User:     principal.String(),
+		Relation: action.String(),
+		Object:   object.String(),
 	}
 
 	allowed, err := f.client.Check(ctx).Body(body).Execute()

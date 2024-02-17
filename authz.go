@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 // AuthzPrincipal ...
@@ -19,40 +18,40 @@ func (a AuthzPrincipal) String() string {
 	return string(a)
 }
 
-// AuthzUser ...
-type AuthzUser string
+// AuthzObject ...
+type AuthzObject string
 
 // String ...
-func (a AuthzUser) String() string {
+func (a AuthzObject) String() string {
 	return string(a)
 }
 
-// AuthzPermission ...
-type AuthzPermission string
+// AuthzAction ...
+type AuthzAction string
 
 // String ...
-func (a AuthzPermission) String() string {
+func (a AuthzAction) String() string {
 	return string(a)
 }
 
 const (
 	AuthzNoPrincipial = ""
-	AuthzNoUser       = ""
-	AuthzNoPermission = ""
+	AuthzNoObject     = ""
+	AuthzNoAction     = ""
 )
 
-// AuthzPermissionDefaults are the default permissions.
+// AuthzActionDefaults are the default actions.
 const (
-	Read       AuthzPermission = "read"
-	Write      AuthzPermission = "write"
-	Admin      AuthzPermission = "admin"
-	SuperAdmin AuthzPermission = "superadmin"
+	Read       AuthzAction = "read"
+	Write      AuthzAction = "write"
+	Admin      AuthzAction = "admin"
+	SuperAdmin AuthzAction = "superadmin"
 )
 
 // AuthzChecker is the interface that wraps the Allowed method.
 type AuthzChecker interface {
 	// Allowed ...
-	Allowed(context.Context, AuthzPrincipal, AuthzUser, AuthzPermission) (bool, error)
+	Allowed(context.Context, AuthzPrincipal, AuthzObject, AuthzAction) (bool, error)
 }
 
 // The contextKey type is unexported to prevent collisions with context keys defined in
@@ -62,38 +61,15 @@ type contextKey int
 // The keys for the values in context
 const (
 	authzPrincipial contextKey = iota
-	authzUser
-	authzPermission
+	authzObject
+	authzAction
 )
 
 // Unimplemented is the default implementation.
 type Unimplemented struct{}
 
 // Allowed is the default implementation.
-func (u *Unimplemented) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzUser, _ AuthzPermission) (bool, error) {
-	return false, nil
-}
-
-var _ AuthzChecker = (*defaultChecker)(nil)
-
-type defaultChecker struct {
-	db *gorm.DB
-}
-
-// DefaultChecker returns a default implementation of the AuthzChecker interface.
-func DefaultChecker(db *gorm.DB) *defaultChecker {
-	return &defaultChecker{db}
-}
-
-// Allowed is the default implementation.
-func (d *defaultChecker) Allowed(ctx context.Context, principal AuthzPrincipal, user AuthzUser, permission AuthzPermission) (bool, error) {
-	var allowed int64
-	d.db.Raw("SELECT COUNT(1) FROM vw_user_principal_permissions WHERE user_id = ? AND principal_id = ? AND permission = ?", user, principal, permission).Count(&allowed)
-
-	if allowed > 0 {
-		return true, nil
-	}
-
+func (u *Unimplemented) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzObject, _ AuthzAction) (bool, error) {
 	return false, nil
 }
 
@@ -122,28 +98,28 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 }
 
 // SetAuthzHandler is a middleware that sets the principal and user in the context.
-func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzUser, error)) func(c *fiber.Ctx) error {
+func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzObject, AuthzAction, error)) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		principal, user, err := fn(c.Context())
+		principal, object, action, err := fn(c.Context())
 		if err != nil {
 			return err
 		}
 
-		return ContextWithAuthz(c, principal, user).Next()
+		return ContextWithAuthz(c, principal, object, action).Next()
 	}
 }
 
 // NewProtectedHandler ...
-func NewProtectedHandler(handler fiber.Handler, permission AuthzPermission, config ...Config) fiber.Handler {
+func NewProtectedHandler(handler fiber.Handler, action AuthzAction, config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
-		principal, user, err := AuthzFromContext(c)
+		principal, user, _, err := AuthzFromContext(c)
 		if err != nil {
 			return defaultErrorHandler(c, err)
 		}
 
-		allowed, err := cfg.Checker.Allowed(c.Context(), principal, user, permission)
+		allowed, err := cfg.Checker.Allowed(c.Context(), principal, user, action)
 		if err != nil {
 			return defaultErrorHandler(c, err)
 		}
@@ -156,20 +132,50 @@ func NewProtectedHandler(handler fiber.Handler, permission AuthzPermission, conf
 	}
 }
 
+// NewCheckerHandler returns a new fiber.Handler that checks if the principal can perform the action on the object.
+func NewCheckerHandler(config ...Config) fiber.Handler {
+	cfg := configDefault(config...)
+
+	return func(c *fiber.Ctx) error {
+		payload := struct {
+			Principal  AuthzPrincipal `json:"principal"`
+			Object     AuthzObject    `json:"object"`
+			Permission AuthzAction    `json:"action"`
+		}{}
+
+		if err := c.BodyParser(&payload); err != nil {
+			return defaultErrorHandler(c, err)
+		}
+
+		allowed, err := cfg.Checker.Allowed(c.Context(), payload.Principal, payload.Object, payload.Permission)
+		if err != nil {
+			return defaultErrorHandler(c, err)
+		}
+
+		if allowed {
+			return c.SendStatus(200)
+		}
+
+		return c.SendStatus(403)
+	}
+}
+
 // ContextWithAuthz ...
-func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, user AuthzUser) *fiber.Ctx {
+func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, object AuthzObject, action AuthzAction) *fiber.Ctx {
 	ctx.Locals(authzPrincipial, principal)
-	ctx.Locals(authzUser, user)
+	ctx.Locals(authzObject, object)
+	ctx.Locals(authzAction, action)
 
 	return ctx
 }
 
 // AuthzFromContext ...
-func AuthzFromContext(ctx *fiber.Ctx) (AuthzPrincipal, AuthzUser, error) {
+func AuthzFromContext(ctx *fiber.Ctx) (AuthzPrincipal, AuthzObject, AuthzAction, error) {
 	principal := ctx.Locals(authzPrincipial)
-	user := ctx.Locals(authzUser)
+	object := ctx.Locals(authzObject)
+	action := ctx.Locals(authzAction)
 
-	return principal.(AuthzPrincipal), user.(AuthzUser), nil
+	return principal.(AuthzPrincipal), object.(AuthzObject), action.(AuthzAction), nil
 }
 
 // Helper function to set default values
@@ -180,6 +186,10 @@ func configDefault(config ...Config) Config {
 
 	// Override default config
 	cfg := config[0]
+
+	if cfg.Checker == nil {
+		cfg.Checker = NewNoop()
+	}
 
 	return cfg
 }
