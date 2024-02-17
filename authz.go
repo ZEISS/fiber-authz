@@ -10,26 +10,26 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// AuthzPrincipal ...
+// AuthzPrincipal is the subject.
 type AuthzPrincipal string
 
-// String ...
+// String is the stringer implementation.
 func (a AuthzPrincipal) String() string {
 	return string(a)
 }
 
-// AuthzObject ...
+// AuthzObject is the object.
 type AuthzObject string
 
-// String ...
+// String is the stringer implementation.
 func (a AuthzObject) String() string {
 	return string(a)
 }
 
-// AuthzAction ...
+// AuthzAction is the action.
 type AuthzAction string
 
-// String ...
+// String is the stringer implementation.
 func (a AuthzAction) String() string {
 	return string(a)
 }
@@ -114,6 +114,10 @@ func NewProtectedHandler(handler fiber.Handler, action AuthzAction, config ...Co
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
+		if cfg.Next != nil && cfg.Next(c) {
+			return c.Next()
+		}
+
 		principal, user, _, err := AuthzFromContext(c)
 		if err != nil {
 			return defaultErrorHandler(c, err)
@@ -137,6 +141,10 @@ func NewCheckerHandler(config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
+		if cfg.Next != nil && cfg.Next(c) {
+			return c.Next()
+		}
+
 		payload := struct {
 			Principal  AuthzPrincipal `json:"principal"`
 			Object     AuthzObject    `json:"object"`
