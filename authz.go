@@ -14,11 +14,26 @@ import (
 // AuthzPrincipal ...
 type AuthzPrincipal string
 
+// String ...
+func (a AuthzPrincipal) String() string {
+	return string(a)
+}
+
 // AuthzUser ...
 type AuthzUser string
 
+// String ...
+func (a AuthzUser) String() string {
+	return string(a)
+}
+
 // AuthzPermission ...
 type AuthzPermission string
+
+// String ...
+func (a AuthzPermission) String() string {
+	return string(a)
+}
 
 const (
 	AuthzNoPrincipial = ""
@@ -26,7 +41,7 @@ const (
 	AuthzNoPermission = ""
 )
 
-// AuthzPermissionDefaults ...
+// AuthzPermissionDefaults are the default permissions.
 const (
 	Read       AuthzPermission = "read"
 	Write      AuthzPermission = "write"
@@ -34,7 +49,7 @@ const (
 	SuperAdmin AuthzPermission = "superadmin"
 )
 
-// AuthzChecker...
+// AuthzChecker is the interface that wraps the Allowed method.
 type AuthzChecker interface {
 	// Allowed ...
 	Allowed(context.Context, AuthzPrincipal, AuthzUser, AuthzPermission) (bool, error)
@@ -54,7 +69,7 @@ const (
 // Unimplemented is the default implementation.
 type Unimplemented struct{}
 
-// Allowed ...
+// Allowed is the default implementation.
 func (u *Unimplemented) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzUser, _ AuthzPermission) (bool, error) {
 	return false, nil
 }
@@ -65,12 +80,12 @@ type defaultChecker struct {
 	db *gorm.DB
 }
 
-// DefaultChecker ...
+// DefaultChecker returns a default implementation of the AuthzChecker interface.
 func DefaultChecker(db *gorm.DB) *defaultChecker {
 	return &defaultChecker{db}
 }
 
-// Allowed ...
+// Allowed is the default implementation.
 func (d *defaultChecker) Allowed(ctx context.Context, principal AuthzPrincipal, user AuthzUser, permission AuthzPermission) (bool, error) {
 	var allowed int64
 	d.db.Raw("SELECT COUNT(1) FROM vw_user_principal_permissions WHERE user_id = ? AND principal_id = ? AND permission = ?", user, principal, permission).Count(&allowed)
@@ -106,7 +121,7 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 	return fiber.ErrBadRequest
 }
 
-// SetAuthzHandler ...
+// SetAuthzHandler is a middleware that sets the principal and user in the context.
 func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzUser, error)) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		principal, user, err := fn(c.Context())
