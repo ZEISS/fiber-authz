@@ -90,6 +90,7 @@ type Config struct {
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
 	ErrorHandler: defaultErrorHandler,
+	Checker:      NewNoop(),
 }
 
 // default ErrorHandler that process return error from fiber.Handler
@@ -196,7 +197,11 @@ func configDefault(config ...Config) Config {
 	cfg := config[0]
 
 	if cfg.Checker == nil {
-		cfg.Checker = NewNoop()
+		cfg.Checker = ConfigDefault.Checker
+	}
+
+	if cfg.ErrorHandler == nil {
+		cfg.ErrorHandler = ConfigDefault.ErrorHandler
 	}
 
 	return cfg
