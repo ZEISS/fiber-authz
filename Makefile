@@ -3,7 +3,12 @@
 GO ?= go
 GO_RUN_TOOLS ?= $(GO) run -modfile ./tools/go.mod
 GO_TEST = $(GO_RUN_TOOLS) gotest.tools/gotestsum --format pkgname
+GO_RELEASER ?= $(GO_RUN_TOOLS) github.com/goreleaser/goreleaser
 GO_MOD ?= $(shell ${GO} list -m)
+
+.PHONY: build
+build: ## Build the binary file.
+	$(GO_RELEASER) build --snapshot --clean
 
 .PHONY: generate
 generate: ## Generate code.
