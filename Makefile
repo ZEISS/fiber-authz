@@ -7,8 +7,8 @@ GO_RELEASER ?= $(GO_RUN_TOOLS) github.com/goreleaser/goreleaser
 GO_MOD ?= $(shell ${GO} list -m)
 
 .PHONY: release
-release: ## Build the binary file.
-	$(GO_RELEASER) build --clean
+release: ## Release the project.
+	$(GO_RELEASER) release --clean
 
 .PHONY: generate
 generate: ## Generate code.
