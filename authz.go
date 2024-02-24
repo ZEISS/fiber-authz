@@ -99,8 +99,7 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 }
 
 // SetAuthzHandler is a middleware that sets the principal and user in the context.
-// This function can map any thing. Maybe this is abritrary and should be removed.
-// but it may be is als
+// This function can map any thing.
 func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzObject, AuthzAction, error)) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		principal, object, action, err := fn(c.Context())
