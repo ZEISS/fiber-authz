@@ -41,8 +41,6 @@ type Role struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
-
-	gorm.Model
 }
 
 // Validate validates the role.
@@ -64,8 +62,6 @@ type Team struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
-
-	gorm.Model
 }
 
 // Validate validates the team.
@@ -88,8 +84,6 @@ type User struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
-
-	gorm.Model
 }
 
 // Validate validates the user.
@@ -108,8 +102,6 @@ type Permission struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
-
-	gorm.Model
 }
 
 // Validate validates the permission.
