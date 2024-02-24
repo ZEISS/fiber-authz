@@ -4,9 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// use a single instance of Validate, it caches struct info.
+var validate = validator.New()
 
 // RunMigrations is a function that runs the migrations for the authz package.
 func RunMigrations(db *gorm.DB) error {
@@ -31,30 +35,44 @@ func RunMigrations(db *gorm.DB) error {
 // Role is a role that a user can have.
 type Role struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	Name        string
+	Name        string    `gorm:"uniqueIndex"`
 	Description string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt time.Time
+	DeletedAt gorm.DeletedAt
 
 	gorm.Model
+}
+
+// Validate validates the role.
+func (r *Role) Validate() error {
+	validate = validator.New()
+
+	return validate.Struct(r)
 }
 
 // Team is a group of users.
 type Team struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
 	Name        string
-	Slug        string
-	Description *string
+	Slug        string  `gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
+	Description *string `validate:"omitempty,max=255"`
 
 	Users *[]User `gorm:"many2many:user_teams;"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt time.Time
+	DeletedAt gorm.DeletedAt
 
 	gorm.Model
+}
+
+// Validate validates the team.
+func (t *Team) Validate() error {
+	validate = validator.New()
+
+	return validate.Struct(t)
 }
 
 // User is a user.
@@ -69,9 +87,16 @@ type User struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt time.Time
+	DeletedAt gorm.DeletedAt
 
 	gorm.Model
+}
+
+// Validate validates the user.
+func (u *User) Validate() error {
+	validate = validator.New()
+
+	return validate.Struct(u)
 }
 
 // Permission is a permission that a user can have.
@@ -82,9 +107,16 @@ type Permission struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt time.Time
+	DeletedAt gorm.DeletedAt
 
 	gorm.Model
+}
+
+// Validate validates the permission.
+func (p *Permission) Validate() error {
+	validate = validator.New()
+
+	return validate.Struct(p)
 }
 
 // RolePermission is a relation between a role and a permission.
@@ -99,7 +131,7 @@ type RolePermission struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt time.Time
+	DeletedAt gorm.DeletedAt
 }
 
 // UserTeam is a relation between a user and a team.

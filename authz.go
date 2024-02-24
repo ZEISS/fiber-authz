@@ -99,6 +99,8 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 }
 
 // SetAuthzHandler is a middleware that sets the principal and user in the context.
+// This function can map any thing. Maybe this is abritrary and should be removed.
+// but it may be is als
 func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzObject, AuthzAction, error)) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
 		principal, object, action, err := fn(c.Context())
@@ -110,7 +112,8 @@ func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzObject, 
 	}
 }
 
-// NewProtectedHandler ...
+// NewProtectedHandler there is not general integration pattern that is available. there needs to be a mapping
+// from the action too the relation that is agnostic and that works across all object.s
 func NewProtectedHandler(handler fiber.Handler, action AuthzAction, config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
@@ -169,7 +172,7 @@ func NewCheckerHandler(config ...Config) fiber.Handler {
 	}
 }
 
-// ContextWithAuthz ...
+// ContextWithAuthz returns a new context with the principal, object and action set.
 func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, object AuthzObject, action AuthzAction) *fiber.Ctx {
 	ctx.Locals(authzPrincipial, principal)
 	ctx.Locals(authzObject, object)
@@ -178,7 +181,7 @@ func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, object AuthzObje
 	return ctx
 }
 
-// AuthzFromContext ...
+// AuthzFromContext return the principal, object and action from the context.
 func AuthzFromContext(ctx *fiber.Ctx) (AuthzPrincipal, AuthzObject, AuthzAction, error) {
 	principal := ctx.Locals(authzPrincipial)
 	object := ctx.Locals(authzObject)
