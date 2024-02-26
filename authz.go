@@ -6,7 +6,6 @@ package authz
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -121,8 +120,6 @@ type AuthzActionResolver interface {
 // This function can map any thing.
 func SetAuthzHandler(object AuthzObjectResolver, action AuthzActionResolver, principal AuthzPrincipalResolver) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		fmt.Println(c.Path(), c.Params("team"))
-
 		object, err := object.Resolve(c)
 		if err != nil {
 			return err
