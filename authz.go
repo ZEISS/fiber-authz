@@ -6,6 +6,7 @@ package authz
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -98,11 +99,41 @@ func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 	return fiber.ErrBadRequest
 }
 
+// AuthzObjectResolver is the interface that wraps the Resolve method.
+type AuthzObjectResolver interface {
+	// Resolve ...
+	Resolve(c *fiber.Ctx) (AuthzObject, error)
+}
+
+// AuthzPrincipalResolver is the interface that wraps the Resolve method.
+type AuthzPrincipalResolver interface {
+	// Resolve ...
+	Resolve(c *fiber.Ctx) (AuthzPrincipal, error)
+}
+
+// AuthzActionResolver is the interface that wraps the Resolve method.
+type AuthzActionResolver interface {
+	// Resolve ...
+	Resolve(c *fiber.Ctx) (AuthzAction, error)
+}
+
 // SetAuthzHandler is a middleware that sets the principal and user in the context.
 // This function can map any thing.
-func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzObject, AuthzAction, error)) func(c *fiber.Ctx) error {
+func SetAuthzHandler(object AuthzObjectResolver, action AuthzActionResolver, principal AuthzPrincipalResolver) func(c *fiber.Ctx) error {
 	return func(c *fiber.Ctx) error {
-		principal, object, action, err := fn(c.Context())
+		fmt.Println(c.Path(), c.Params("team"))
+
+		object, err := object.Resolve(c)
+		if err != nil {
+			return err
+		}
+
+		principal, err := principal.Resolve(c)
+		if err != nil {
+			return err
+		}
+
+		action, err := action.Resolve(c)
 		if err != nil {
 			return err
 		}
@@ -111,9 +142,8 @@ func SetAuthzHandler(fn func(ctx context.Context) (AuthzPrincipal, AuthzObject, 
 	}
 }
 
-// NewProtectedHandler there is not general integration pattern that is available. there needs to be a mapping
-// from the action too the relation that is agnostic and that works across all object.s
-func NewProtectedHandler(handler fiber.Handler, action AuthzAction, config ...Config) fiber.Handler {
+// NewTBACHandler there is a new fiber.Handler that checks if the principal can perform the action on the object.
+func NewTBACHandler(handler fiber.Handler, action AuthzAction, param string, config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
@@ -121,12 +151,14 @@ func NewProtectedHandler(handler fiber.Handler, action AuthzAction, config ...Co
 			return c.Next()
 		}
 
-		principal, user, _, err := AuthzFromContext(c)
+		team := AuthzObject(c.Params(param, ""))
+
+		principal, _, _, err := AuthzFromContext(c)
 		if err != nil {
 			return defaultErrorHandler(c, err)
 		}
 
-		allowed, err := cfg.Checker.Allowed(c.Context(), principal, user, action)
+		allowed, err := cfg.Checker.Allowed(c.Context(), principal, team, action)
 		if err != nil {
 			return defaultErrorHandler(c, err)
 		}
@@ -207,4 +239,40 @@ func configDefault(config ...Config) Config {
 	}
 
 	return cfg
+}
+
+type noopObjectResolver struct{}
+
+// Resolve ...
+func (n *noopObjectResolver) Resolve(c *fiber.Ctx) (AuthzObject, error) {
+	return AuthzNoObject, nil
+}
+
+// NewNoopObjectResolver ...
+func NewNoopObjectResolver() AuthzObjectResolver {
+	return &noopObjectResolver{}
+}
+
+type noopPrincipalResolver struct{}
+
+// Resolve ...
+func (n *noopPrincipalResolver) Resolve(c *fiber.Ctx) (AuthzPrincipal, error) {
+	return AuthzNoPrincipial, nil
+}
+
+// NewNoopPrincipalResolver ...
+func NewNoopPrincipalResolver() AuthzPrincipalResolver {
+	return &noopPrincipalResolver{}
+}
+
+type noopActionResolver struct{}
+
+// Resolve ...
+func (n *noopActionResolver) Resolve(c *fiber.Ctx) (AuthzAction, error) {
+	return AuthzNoAction, nil
+}
+
+// NewNoopActionResolver ...
+func NewNoopActionResolver() AuthzActionResolver {
+	return &noopActionResolver{}
 }

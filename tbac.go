@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/zeiss/fiber-goth/adapters"
 	"gorm.io/gorm"
 )
 
@@ -17,7 +19,7 @@ func RunMigrations(db *gorm.DB) error {
 	err := db.AutoMigrate(
 		&Role{},
 		&Team{},
-		&User{},
+		&adapters.User{},
 		&Permission{},
 		&RolePermission{},
 		&UserTeam{},
@@ -74,10 +76,10 @@ func (t *Team) Validate() error {
 // User is a user.
 type User struct {
 	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	Name          string
-	Email         string
-	EmailVerified *string
-	Image         *string
+	Name          string    `validate:"required,max=255"`
+	Email         string    `validate:"required,email"`
+	EmailVerified *string   `validate:"omitempty,email"`
+	Image         *string   `validate:"omitempty,url"`
 
 	Teams *[]Team `gorm:"many2many:user_teams;"`
 
@@ -95,9 +97,9 @@ func (u *User) Validate() error {
 
 // Permission is a permission that a user can have.
 type Permission struct {
-	ID          uint `gorm:"primaryKey"`
-	Slug        string
-	Description *string
+	ID          uint    `gorm:"primaryKey"`
+	Slug        string  `gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
+	Description *string `validate:"omitempty,max=255"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -165,10 +167,12 @@ func NewTBAC(db *gorm.DB) *tbac {
 }
 
 // Allowed is a method that returns true if the principal is allowed to perform the action on the user.
-func (d *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
+func (t *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
 	var allowed int64
 
-	err := d.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = ? AND permission = ?", principal, object, action).Count(&allowed).Error
+	teamSlug := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
+
+	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, teamSlug, action).Count(&allowed).Error
 	if err != nil {
 		return false, err
 	}
@@ -178,4 +182,9 @@ func (d *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object Aut
 	}
 
 	return false, nil
+}
+
+// Resolve ...
+func (t *tbac) Resolve(c *fiber.Ctx) (AuthzObject, error) {
+	return AuthzObject(c.Params("team")), nil
 }
