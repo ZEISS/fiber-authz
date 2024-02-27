@@ -22,9 +22,6 @@ func RunMigrations(db *gorm.DB) error {
 		&User{},
 		&Permission{},
 		&UserRole{},
-		&adapters.Account{},
-		&adapters.Session{},
-		&adapters.VerificationToken{},
 	)
 	if err != nil {
 		return err
@@ -81,7 +78,7 @@ type User struct {
 	Teams *[]Team `gorm:"many2many:user_teams;"`
 	Roles *[]Role `gorm:"many2many:user_roles;"`
 
-	adapters.User
+	*adapters.User
 }
 
 // UserRole is a user role.
