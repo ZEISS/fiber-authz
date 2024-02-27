@@ -19,10 +19,8 @@ func RunMigrations(db *gorm.DB) error {
 	err := db.AutoMigrate(
 		&Role{},
 		&Team{},
-		&adapters.User{},
+		&User{},
 		&Permission{},
-		&RolePermission{},
-		&UserTeam{},
 		&UserRole{},
 	)
 	if err != nil {
@@ -38,7 +36,9 @@ func RunMigrations(db *gorm.DB) error {
 type Role struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
 	Name        string    `gorm:"uniqueIndex"`
-	Description string
+	Description string    `validate:"omitempty,max=255"`
+
+	Permissions *[]Permission `gorm:"many2many:role_permissions;"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -75,13 +75,22 @@ func (t *Team) Validate() error {
 
 // User is a user.
 type User struct {
-	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	Name          string    `validate:"required,max=255"`
-	Email         string    `validate:"required,email"`
-	EmailVerified *string   `validate:"omitempty,email"`
-	Image         *string   `validate:"omitempty,url"`
+	*adapters.User
 
 	Teams *[]Team `gorm:"many2many:user_teams;"`
+	Roles *[]Role `gorm:"many2many:user_roles;"`
+}
+
+// UserRole is a user role.
+type UserRole struct {
+	UserID uuid.UUID `gorm:"primaryKey"`
+	User   User
+
+	TeamID uuid.UUID `gorm:"primaryKey"`
+	Team   Team
+
+	RoleID uuid.UUID `gorm:"primaryKey"`
+	Role   Role
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -101,6 +110,8 @@ type Permission struct {
 	Slug        string  `gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
 	Description *string `validate:"omitempty,max=255"`
 
+	Roles *[]Role `gorm:"many2many:role_permissions;"`
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt
@@ -111,48 +122,6 @@ func (p *Permission) Validate() error {
 	validate = validator.New()
 
 	return validate.Struct(p)
-}
-
-// RolePermission is a relation between a role and a permission.
-type RolePermission struct {
-	ID uint `gorm:"primaryKey"`
-
-	RoleID uuid.UUID
-	Role   Role
-
-	PermissionID uint
-	Permission   Permission
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
-}
-
-// UserTeam is a relation between a user and a team.
-type UserTeam struct {
-	ID uint `gorm:"primaryKey"`
-
-	UserID uuid.UUID
-	User   User
-
-	TeamID uuid.UUID
-	Team   Team
-
-	gorm.Model
-}
-
-// UserRole is a relation between a user and a role.
-type UserRole struct {
-	ID uint `gorm:"primaryKey"`
-
-	UserID uuid.UUID
-	User   User
-
-	TeamID uuid.UUID
-	Team   Team
-
-	RoleID uuid.UUID
-	Role   Role
 }
 
 var _ AuthzChecker = (*tbac)(nil)
