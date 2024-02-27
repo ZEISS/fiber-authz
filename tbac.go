@@ -22,6 +22,9 @@ func RunMigrations(db *gorm.DB) error {
 		&User{},
 		&Permission{},
 		&UserRole{},
+		&adapters.Account{},
+		&adapters.Session{},
+		&adapters.VerificationToken{},
 	)
 	if err != nil {
 		return err
@@ -124,15 +127,22 @@ func (p *Permission) Validate() error {
 	return validate.Struct(p)
 }
 
-var _ AuthzChecker = (*tbac)(nil)
+var (
+	_ AuthzChecker     = (*tbac)(nil)
+	_ adapters.Adapter = (*tbac)(nil)
+)
 
 type tbac struct {
 	db *gorm.DB
+
+	adapters.UnimplementedAdapter
 }
 
 // NewTBAC returns a new TBAC authz checker
 func NewTBAC(db *gorm.DB) *tbac {
-	return &tbac{db}
+	return &tbac{
+		db: db,
+	}
 }
 
 // Allowed is a method that returns true if the principal is allowed to perform the action on the user.
@@ -156,4 +166,72 @@ func (t *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object Aut
 // Resolve ...
 func (t *tbac) Resolve(c *fiber.Ctx) (AuthzObject, error) {
 	return AuthzObject(c.Params("team")), nil
+}
+
+// CreateUser ...
+func (a *tbac) CreateUser(ctx context.Context, user adapters.User) (adapters.User, error) {
+	err := a.db.WithContext(ctx).FirstOrCreate(&user).Error
+	if err != nil {
+		return adapters.User{}, err
+	}
+
+	return user, nil
+}
+
+// GetSession is a helper function to retrieve a session by session token.
+func (a *tbac) GetSession(ctx context.Context, sessionToken string) (adapters.Session, error) {
+	var session adapters.Session
+	err := a.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
+	if err != nil {
+		return adapters.Session{}, err
+	}
+
+	return session, nil
+}
+
+// GetUser is a helper function to retrieve a user by ID.
+func (a *tbac) GetUser(ctx context.Context, id uuid.UUID) (adapters.User, error) {
+	var user adapters.User
+	err := a.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return adapters.User{}, err
+	}
+
+	return user, nil
+}
+
+// CreateSession is a helper function to create a new session.
+func (a *tbac) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.Session, error) {
+	session := adapters.Session{UserID: userID, SessionToken: uuid.NewString(), ExpiresAt: expires}
+	err := a.db.WithContext(ctx).Create(&session).Error
+	if err != nil {
+		return adapters.Session{}, err
+	}
+
+	return session, nil
+}
+
+// DeleteSession is a helper function to delete a session by session token.
+func (a *tbac) DeleteSession(ctx context.Context, sessionToken string) error {
+	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
+}
+
+// RefreshSession is a helper function to refresh a session.
+func (a *tbac) RefreshSession(ctx context.Context, session adapters.Session) (adapters.Session, error) {
+	err := a.db.WithContext(ctx).Model(&adapters.Session{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
+	if err != nil {
+		return adapters.Session{}, err
+	}
+
+	return session, nil
+}
+
+// DeleteUser ...
+func (a *tbac) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.User{}).Error
+}
+
+// LinkAccount ...
+func (a *tbac) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
+	return a.db.WithContext(ctx).Model(&adapters.Account{}).Where("id = ?", accountID).Update("user_id", userID).Error
 }
