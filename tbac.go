@@ -78,10 +78,10 @@ func (t *Team) Validate() error {
 
 // User is a user.
 type User struct {
-	*adapters.User
-
 	Teams *[]Team `gorm:"many2many:user_teams;"`
 	Roles *[]Role `gorm:"many2many:user_roles;"`
+
+	adapters.User
 }
 
 // UserRole is a user role.
