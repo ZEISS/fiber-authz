@@ -1,6 +1,7 @@
 module github.com/zeiss/fiber-authz
 
 go 1.21.6
+toolchain go1.22.2
 
 require (
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
@@ -12,7 +13,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/katallaxie/pkg v0.6.5
 	github.com/lestrrat-go/jwx v1.2.29
-	github.com/openfga/go-sdk v0.3.5
+	github.com/openfga/go-sdk v0.3.6
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.0
