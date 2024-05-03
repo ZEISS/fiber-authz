@@ -22,14 +22,26 @@ func RunMigrations(db *gorm.DB) error {
 		&User{},
 		&Permission{},
 		&UserRole{},
+		&APIKey{},
+		&APIKeyRole{},
 	)
 	if err != nil {
 		return err
 	}
 
-	query := db.Raw("SELECT A.user_id, A.team_id, C.slug as permission FROM user_roles AS A LEFT JOIN role_permissions AS B ON A.role_id = B.role_id LEFT JOIN permissions AS C on B.permission_id = C.id;")
+	query := db.Raw("SELECT A.user_id, A.team_id, C.scope as permission FROM user_roles AS A LEFT JOIN role_permissions AS B ON A.role_id = B.role_id LEFT JOIN permissions AS C on B.permission_id = C.id;")
+	err = db.Migrator().CreateView("vw_user_team_permissions", gorm.ViewOption{Query: query, Replace: true})
+	if err != nil {
+		return err
+	}
 
-	return db.Migrator().CreateView("vw_user_team_permissions", gorm.ViewOption{Query: query, Replace: true})
+	query = db.Raw("SELECT A.key_id, A.team_id, C.scope as permission FROM api_key_roles AS A LEFT JOIN role_permissions AS B ON A.role_id = B.role_id LEFT JOIN permissions AS C on B.permission_id = C.id;")
+	err = db.Migrator().CreateView("vw_api_key_team_permissions", gorm.ViewOption{Query: query, Replace: true})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Role is a role that a user can have.
@@ -54,15 +66,23 @@ func (r *Role) Validate() error {
 
 // Team is a group of users.
 type Team struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	Name        string
-	Slug        string  `gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
-	Description *string `validate:"omitempty,max=255"`
+	// ID is the primary key of the team.
+	ID uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid()"`
+	// Name is the name of the team.
+	Name string `json:"name" validate:"required,alphanum,gt=3,lt=255"`
+	// Slug is the unique identifier of the team.
+	Slug string `json:"slug" gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
+	// Description is the description of the team.
+	Description *string `json:"description" validate:"omitempty,max=255"`
 
+	// Users are the users in the team.
 	Users *[]User `gorm:"many2many:user_teams;"`
 
+	// CreatedAt is the time the team was created.
 	CreatedAt time.Time
+	// UpdatedAt is the time the team was last updated.
 	UpdatedAt time.Time
+	// DeletedAt is the time the team was deleted.
 	DeletedAt gorm.DeletedAt
 }
 
@@ -83,17 +103,23 @@ type User struct {
 
 // UserRole is a user role.
 type UserRole struct {
+	// UserID is the primary key of the user.
 	UserID uuid.UUID `gorm:"primaryKey"`
 	User   User
 
+	// TeamID is the primary key of the team.
 	TeamID uuid.UUID `gorm:"primaryKey"`
 	Team   Team
 
+	// RoleID is the primary key of the role.
 	RoleID uuid.UUID `gorm:"primaryKey"`
 	Role   Role
 
+	// CreatedAt is the time the user role was created.
 	CreatedAt time.Time
+	// UpdatedAt is the time the user role was last updated.
 	UpdatedAt time.Time
+	// DeletedAt is the time the user role was deleted.
 	DeletedAt gorm.DeletedAt
 }
 
@@ -106,14 +132,21 @@ func (u *User) Validate() error {
 
 // Permission is a permission that a user can have.
 type Permission struct {
-	ID          uint    `gorm:"primaryKey"`
-	Slug        string  `gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
-	Description *string `validate:"omitempty,max=255"`
+	// ID is the primary key of the permission.
+	ID uint `json:"id" gorm:"primaryKey"`
+	// Scope is the unique identifier of the permission.
+	Scope string `json:"scope" gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
+	// Description is the description of the permission.
+	Description *string `json:"description" validate:"omitempty,max=255"`
 
+	// Roles are the roles that have the permission.
 	Roles *[]Role `gorm:"many2many:role_permissions;"`
 
+	// CreatedAt is the time the permission was created.
 	CreatedAt time.Time
+	// UpdatedAt is the time the permission was last updated.
 	UpdatedAt time.Time
+	// DeletedAt is the time the permission was deleted.
 	DeletedAt gorm.DeletedAt
 }
 
@@ -122,6 +155,44 @@ func (p *Permission) Validate() error {
 	validate = validator.New()
 
 	return validate.Struct(p)
+}
+
+// APIKey is an API key.
+type APIKey struct {
+	// ID is the primary key of the API key.
+	ID uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
+	// Key is the API key.
+	Key string `gorm:"uniqueIndex" validate:"required,alphanum,gt=3,lt=255,lowercase"`
+	// Description is the description of the API key.
+	Description *string `validate:"omitempty,max=255"`
+	// CreatedAt is the time the API key was created.
+	CreatedAt time.Time
+	// UpdatedAt is the time the API key was last updated.
+	UpdatedAt time.Time
+	// DeletedAt is the time the API key was deleted.
+	DeletedAt gorm.DeletedAt
+}
+
+// APIKeyRole is a user role.
+type APIKeyRole struct {
+	// APIKeyID is the primary key of the API key.
+	KeyID uuid.UUID `gorm:"primaryKey"`
+	Key   APIKey
+
+	// RoleID is the primary key of the role.
+	RoleID uuid.UUID `gorm:"primaryKey"`
+	Role   Role
+
+	// TeamID is the primary key of the team.
+	TeamID uuid.UUID `gorm:"primaryKey"`
+	Team   Team
+
+	// CreatedAt is the time the API key role was created.
+	CreatedAt time.Time
+	// UpdatedAt is the time the API key role was last updated.
+	UpdatedAt time.Time
+	// DeletedAt is the time the API key role was deleted.
+	DeletedAt gorm.DeletedAt
 }
 
 var (
@@ -135,7 +206,7 @@ type tbac struct {
 	adapters.UnimplementedAdapter
 }
 
-// NewTBAC returns a new TBAC authz checker
+// NewTBAC returns a new TBAC authz checker.
 func NewTBAC(db *gorm.DB) *tbac {
 	return &tbac{
 		db: db,
@@ -146,9 +217,9 @@ func NewTBAC(db *gorm.DB) *tbac {
 func (t *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
 	var allowed int64
 
-	teamSlug := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
+	teamScope := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("scope = ?", object)
 
-	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, teamSlug, action).Count(&allowed).Error
+	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, teamScope, action).Count(&allowed).Error
 	if err != nil {
 		return false, err
 	}

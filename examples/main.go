@@ -63,7 +63,7 @@ func init() {
 	rootCmd.SilenceUsage = true
 }
 
-func run(ctx context.Context) error {
+func run(_ context.Context) error {
 	log.SetFlags(0)
 	log.SetOutput(os.Stderr)
 

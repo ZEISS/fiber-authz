@@ -13,7 +13,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/katallaxie/pkg v0.6.5
 	github.com/lestrrat-go/jwx v1.2.29
+<<<<<<< HEAD
 	github.com/openfga/go-sdk v0.3.6
+=======
+	github.com/oapi-codegen/fiber-middleware v1.0.1
+	github.com/openfga/go-sdk v0.3.5
+>>>>>>> d144c87 (feat: adding api key model)
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.0
@@ -98,6 +103,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/pprof v0.0.0-20231023181126-ff6d637d2a7b // indirect
 	github.com/gordonklaus/ineffassign v0.1.0 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.4.2 // indirect
 	github.com/gostaticanalysis/forcetypeassert v0.1.0 // indirect

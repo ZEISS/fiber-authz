@@ -63,6 +63,7 @@ const (
 	authzPrincipial contextKey = iota
 	authzObject
 	authzAction
+	authzAPIKey
 )
 
 // Unimplemented is the default implementation.
