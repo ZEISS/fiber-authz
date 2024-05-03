@@ -39,6 +39,7 @@ func NewOpenAPIAuthenticator() openapi3filter.AuthenticationFunc {
 		usrCtx := c.UserContext()
 		authCtx := context.WithValue(usrCtx, authzAPIKey, key)
 
+		// nolint: contextcheck
 		c.SetUserContext(authCtx)
 
 		return nil
