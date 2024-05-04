@@ -10,6 +10,44 @@ import (
 	middleware "github.com/oapi-codegen/fiber-middleware"
 )
 
+// OpenAPIAuthenticatorOpts are the OpenAPI authenticator options.
+type OpenAPIAuthenticatorOpts struct {
+	PathParam string
+	Checker   AuthzChecker
+}
+
+// Conigure the OpenAPI authenticator.
+func (o *OpenAPIAuthenticatorOpts) Conigure(opts ...OpenAPIAuthenticatorOpt) {
+	for _, opt := range opts {
+		opt(o)
+	}
+}
+
+// OpenAPIAuthenticatorOpt is a function that sets an option on the OpenAPI authenticator.
+type OpenAPIAuthenticatorOpt func(*OpenAPIAuthenticatorOpts)
+
+// OpenAPIAuthenticatorDefaultOpts are the default OpenAPI authenticator options.
+func OpenAPIAuthenticatorDefaultOpts() OpenAPIAuthenticatorOpts {
+	return OpenAPIAuthenticatorOpts{
+		PathParam: "teamId",
+		Checker:   NewNoop(),
+	}
+}
+
+// WithPathParam sets the path parameter.
+func WithPathParam(param string) OpenAPIAuthenticatorOpt {
+	return func(opts *OpenAPIAuthenticatorOpts) {
+		opts.PathParam = param
+	}
+}
+
+// WithChecker sets the authz checker.
+func WithChecker(checker AuthzChecker) OpenAPIAuthenticatorOpt {
+	return func(opts *OpenAPIAuthenticatorOpts) {
+		opts.Checker = checker
+	}
+}
+
 // NewOpenAPIErrorHandler creates a new OpenAPI error handler.
 func NewOpenAPIErrorHandler() middleware.ErrorHandler {
 	return func(c *fiber.Ctx, message string, statusCode int) {
@@ -21,9 +59,13 @@ func NewOpenAPIErrorHandler() middleware.ErrorHandler {
 }
 
 // NewOpenAPIAuthenticator creates a new OpenAPI authenticator.
-func NewOpenAPIAuthenticator() openapi3filter.AuthenticationFunc {
+func NewOpenAPIAuthenticator(opts ...OpenAPIAuthenticatorOpt) openapi3filter.AuthenticationFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+		opt := OpenAPIAuthenticatorDefaultOpts()
+		opt.Conigure(opts...)
+
 		c := middleware.GetFiberContext(ctx)
+		obj := AuthzObject(c.Params(opt.PathParam, ""))
 
 		key, err := GetAPIKeyFromRequest(input.RequestValidationInput.Request)
 		if err != nil {
@@ -33,6 +75,18 @@ func NewOpenAPIAuthenticator() openapi3filter.AuthenticationFunc {
 		err = validate.Var(key, "required,uuid")
 		if err != nil {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid API key")
+		}
+
+		allowed := len(input.Scopes) == 0
+		if len(input.Scopes) > 0 {
+			allowed, err = opt.Checker.Allowed(ctx, AuthzPrincipal(key), obj, AuthzAction(input.Scopes[0]))
+			if err != nil {
+				return fiber.NewError(fiber.StatusInternalServerError, "Internal Server Error")
+			}
+		}
+
+		if !allowed {
+			return fiber.NewError(fiber.StatusForbidden, "Forbidden")
 		}
 
 		// Create a new context with the API key.
