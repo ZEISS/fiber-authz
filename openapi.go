@@ -8,6 +8,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
 	middleware "github.com/oapi-codegen/fiber-middleware"
+	"gorm.io/gorm"
 )
 
 // OpenAPIAuthenticatorOpts are the OpenAPI authenticator options.
@@ -114,4 +115,35 @@ func GetAPIKeyFromContext(ctx context.Context) (string, error) {
 // GetAPIKeyFromRequest is a fake implementation of the API key extractor.
 func GetAPIKeyFromRequest(req *http.Request) (string, error) {
 	return req.Header.Get("x-api-key"), nil
+}
+
+var _ AuthzChecker = (*apiKey)(nil)
+
+type apiKey struct {
+	db *gorm.DB
+}
+
+// NewAPIKey returns a new API key authenticator.
+func NewAPIKey(db *gorm.DB) *apiKey {
+	return &apiKey{
+		db: db,
+	}
+}
+
+// Allowed is a method that returns true if the principal is allowed to perform the action on the user.
+func (t *apiKey) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
+	var allowed int64
+
+	team := t.db.WithContext(ctx).Model(&apiKey{}).Select("id").Where("slug = ?", object)
+
+	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, team, action).Count(&allowed).Error
+	if err != nil {
+		return false, err
+	}
+
+	if allowed > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }

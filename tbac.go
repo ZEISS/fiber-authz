@@ -217,9 +217,9 @@ func NewTBAC(db *gorm.DB) *tbac {
 func (t *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
 	var allowed int64
 
-	teamScope := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("scope = ?", object)
+	team := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
 
-	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, teamScope, action).Count(&allowed).Error
+	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, team, action).Count(&allowed).Error
 	if err != nil {
 		return false, err
 	}
