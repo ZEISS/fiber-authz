@@ -3,11 +3,13 @@ package authz
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
 	middleware "github.com/oapi-codegen/fiber-middleware"
+	"github.com/oapi-codegen/runtime"
 	"gorm.io/gorm"
 )
 
@@ -66,7 +68,12 @@ func NewOpenAPIAuthenticator(opts ...OpenAPIAuthenticatorOpt) openapi3filter.Aut
 		opt.Conigure(opts...)
 
 		c := middleware.GetFiberContext(ctx)
-		obj := AuthzObject(c.Params(opt.PathParam, ""))
+
+		var teamId string
+		err := runtime.BindStyledParameterWithOptions("simple", "teamId", c.Params(opt.PathParam), &teamId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+		if err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("invalid format for parameter teamId: %w", err).Error())
+		}
 
 		key, err := GetAPIKeyFromRequest(input.RequestValidationInput.Request)
 		if err != nil {
@@ -80,7 +87,7 @@ func NewOpenAPIAuthenticator(opts ...OpenAPIAuthenticatorOpt) openapi3filter.Aut
 
 		allowed := len(input.Scopes) == 0
 		if len(input.Scopes) > 0 {
-			allowed, err = opt.Checker.Allowed(ctx, AuthzPrincipal(key), obj, AuthzAction(input.Scopes[0]))
+			allowed, err = opt.Checker.Allowed(ctx, AuthzPrincipal(key), AuthzObject(teamId), AuthzAction(input.Scopes[0]))
 			if err != nil {
 				return fiber.NewError(fiber.StatusInternalServerError, "Internal Server Error")
 			}
