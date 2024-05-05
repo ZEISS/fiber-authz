@@ -9,7 +9,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
 	middleware "github.com/oapi-codegen/fiber-middleware"
-	"github.com/oapi-codegen/runtime"
 	"gorm.io/gorm"
 )
 
@@ -69,10 +68,9 @@ func NewOpenAPIAuthenticator(opts ...OpenAPIAuthenticatorOpt) openapi3filter.Aut
 
 		c := middleware.GetFiberContext(ctx)
 
-		var teamId string
-		err := runtime.BindStyledParameterWithOptions("simple", "teamId", c.Params(opt.PathParam), &teamId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("invalid format for parameter teamId: %w", err).Error())
+		teamId, ok := input.RequestValidationInput.PathParams[opt.PathParam]
+		if !ok {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Errorf("missing path parameter %s", opt.PathParam).Error())
 		}
 
 		key, err := GetAPIKeyFromRequest(input.RequestValidationInput.Request)
@@ -141,9 +139,7 @@ func NewAPIKey(db *gorm.DB) *apiKey {
 func (t *apiKey) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
 	var allowed int64
 
-	team := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
-
-	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, team, action).Count(&allowed).Error
+	err := t.db.Raw("SELECT COUNT(1) FROM vw_api_key_team_permissions WHERE key_id = ? AND team_id = (?) AND permission = ?", principal, object, action).Count(&allowed).Error
 	if err != nil {
 		return false, err
 	}
