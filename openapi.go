@@ -134,7 +134,7 @@ func NewAPIKey(db *gorm.DB) *apiKey {
 func (t *apiKey) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
 	var allowed int64
 
-	team := t.db.WithContext(ctx).Model(&apiKey{}).Select("id").Where("slug = ?", object)
+	team := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
 
 	err := t.db.Raw("SELECT COUNT(1) FROM vw_user_team_permissions WHERE user_id = ? AND team_id = (?) AND permission = ?", principal, team, action).Count(&allowed).Error
 	if err != nil {
