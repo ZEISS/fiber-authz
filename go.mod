@@ -1,6 +1,7 @@
 module github.com/zeiss/fiber-authz
 
 go 1.21.6
+toolchain go1.22.2
 
 require (
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
@@ -13,8 +14,7 @@ require (
 	github.com/katallaxie/pkg v0.6.5
 	github.com/lestrrat-go/jwx v1.2.29
 	github.com/oapi-codegen/fiber-middleware v1.0.1
-	github.com/oapi-codegen/runtime v1.1.1
-	github.com/openfga/go-sdk v0.3.5
+	github.com/openfga/go-sdk v0.3.6
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.0
@@ -41,7 +41,6 @@ require (
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/ashanbrown/forbidigo v1.6.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
