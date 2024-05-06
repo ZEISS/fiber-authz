@@ -63,7 +63,7 @@ const (
 	authzPrincipial contextKey = iota
 	authzObject
 	authzAction
-	authzAPIKey
+	authzContext
 )
 
 // Unimplemented is the default implementation.
@@ -72,6 +72,23 @@ type Unimplemented struct{}
 // Allowed is the default implementation.
 func (u *Unimplemented) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzObject, _ AuthzAction) (bool, error) {
 	return false, nil
+}
+
+var _ AuthzChecker = (*Fake)(nil)
+
+// Fake is a fake authz checker.
+type Fake struct {
+	allowd bool
+}
+
+// NewFake returns a new Fake authz checker.
+func NewFake(allowed bool) *Fake {
+	return &Fake{allowd: allowed}
+}
+
+// Allowed returns true if the principal is allowed to perform the action on the object.
+func (f *Fake) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzObject, _ AuthzAction) (bool, error) {
+	return f.allowd, nil
 }
 
 // Config ...

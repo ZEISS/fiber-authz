@@ -1,6 +1,7 @@
 module github.com/zeiss/fiber-authz
 
-go 1.21.6
+go 1.21.9
+
 toolchain go1.22.2
 
 require (
