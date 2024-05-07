@@ -29,7 +29,7 @@ func RunMigrations(db *gorm.DB) error {
 		return err
 	}
 
-	query := db.Raw("SELECT A.user_id, A.team_id, C.scope as permission FROM " + db.Config.NamingStrategy.TableName("user_roles") + "AS A LEFT JOIN role_permissions AS B ON A.role_id = B.role_id LEFT JOIN permissions AS C on B.permission_id = C.id;")
+	query := db.Raw("SELECT A.user_id, A.team_id, C.scope as permission FROM " + db.Config.NamingStrategy.TableName("user_roles") + " AS A LEFT JOIN role_permissions AS B ON A.role_id = B.role_id LEFT JOIN permissions AS C on B.permission_id = C.id;")
 	err = db.Migrator().CreateView("vw_user_team_permissions", gorm.ViewOption{Query: query, Replace: true})
 	if err != nil {
 		return err
