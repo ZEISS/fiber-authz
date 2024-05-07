@@ -30,16 +30,19 @@ func RunMigrations(db *gorm.DB) error {
 	}
 
 	userRolesTableName := db.Config.NamingStrategy.TableName("user_roles")
+	apiKeyRolesTableName := db.Config.NamingStrategy.TableName("api_key_roles")
 	rolePermissionsTableName := db.Config.NamingStrategy.TableName("role_permissions")
 	permissionsTableName := db.Config.NamingStrategy.TableName("permissions")
 
+	// View for user team permissions
 	query := db.Raw("SELECT A.user_id, A.team_id, C.scope as permission FROM " + userRolesTableName + " AS A LEFT JOIN " + rolePermissionsTableName + " AS B ON A.role_id = B.role_id LEFT JOIN " + permissionsTableName + " AS C on B.permission_id = C.id;")
 	err = db.Migrator().CreateView("vw_user_team_permissions", gorm.ViewOption{Query: query, Replace: true})
 	if err != nil {
 		return err
 	}
 
-	query = db.Raw("SELECT A.key_id, A.team_id, C.scope as permission FROM " + userRolesTableName + " AS A LEFT JOIN " + rolePermissionsTableName + " AS B ON A.role_id = B.role_id LEFT JOIN " + permissionsTableName + " AS C on B.permission_id = C.id;")
+	// View for the api key permissions
+	query = db.Raw("SELECT A.key_id, A.team_id, C.scope as permission FROM " + apiKeyRolesTableName + " AS A LEFT JOIN " + rolePermissionsTableName + " AS B ON A.role_id = B.role_id LEFT JOIN " + permissionsTableName + " AS C on B.permission_id = C.id;")
 	err = db.Migrator().CreateView("vw_api_key_team_permissions", gorm.ViewOption{Query: query, Replace: true})
 	if err != nil {
 		return err
