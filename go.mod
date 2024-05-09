@@ -15,7 +15,7 @@ require (
 	github.com/katallaxie/pkg v0.6.5
 	github.com/lestrrat-go/jwx v1.2.29
 	github.com/oapi-codegen/fiber-middleware v1.0.1
-	github.com/openfga/go-sdk v0.3.6
+	github.com/openfga/go-sdk v0.3.7
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.0
