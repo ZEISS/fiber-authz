@@ -105,7 +105,7 @@ type User struct {
 	Teams *[]Team `gorm:"many2many:user_teams;"`
 	Roles *[]Role `gorm:"many2many:user_roles;"`
 
-	*adapters.User
+	*adapters.GothUser
 }
 
 // UserRole is a user role.
@@ -244,43 +244,43 @@ func (t *tbac) Resolve(c *fiber.Ctx) (AuthzObject, error) {
 }
 
 // CreateUser ...
-func (a *tbac) CreateUser(ctx context.Context, user adapters.User) (adapters.User, error) {
+func (a *tbac) CreateUser(ctx context.Context, user adapters.GothUser) (adapters.GothUser, error) {
 	err := a.db.WithContext(ctx).FirstOrCreate(&user).Error
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 
 	return user, nil
 }
 
 // GetSession is a helper function to retrieve a session by session token.
-func (a *tbac) GetSession(ctx context.Context, sessionToken string) (adapters.Session, error) {
-	var session adapters.Session
+func (a *tbac) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
+	var session adapters.GothSession
 	err := a.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
-		return adapters.Session{}, err
+		return adapters.GothSession{}, err
 	}
 
 	return session, nil
 }
 
 // GetUser is a helper function to retrieve a user by ID.
-func (a *tbac) GetUser(ctx context.Context, id uuid.UUID) (adapters.User, error) {
-	var user adapters.User
+func (a *tbac) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothUser, error) {
+	var user adapters.GothUser
 	err := a.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
 	if err != nil {
-		return adapters.User{}, err
+		return adapters.GothUser{}, err
 	}
 
 	return user, nil
 }
 
 // CreateSession is a helper function to create a new session.
-func (a *tbac) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.Session, error) {
-	session := adapters.Session{UserID: userID, SessionToken: uuid.NewString(), ExpiresAt: expires}
+func (a *tbac) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
+	session := adapters.GothSession{UserID: userID, SessionToken: uuid.NewString(), ExpiresAt: expires}
 	err := a.db.WithContext(ctx).Create(&session).Error
 	if err != nil {
-		return adapters.Session{}, err
+		return adapters.GothSession{}, err
 	}
 
 	return session, nil
@@ -288,14 +288,14 @@ func (a *tbac) CreateSession(ctx context.Context, userID uuid.UUID, expires time
 
 // DeleteSession is a helper function to delete a session by session token.
 func (a *tbac) DeleteSession(ctx context.Context, sessionToken string) error {
-	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.Session{}).Error
+	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.GothSession{}).Error
 }
 
 // RefreshSession is a helper function to refresh a session.
-func (a *tbac) RefreshSession(ctx context.Context, session adapters.Session) (adapters.Session, error) {
-	err := a.db.WithContext(ctx).Model(&adapters.Session{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
+func (a *tbac) RefreshSession(ctx context.Context, session adapters.GothSession) (adapters.GothSession, error) {
+	err := a.db.WithContext(ctx).Model(&adapters.GothSession{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
 	if err != nil {
-		return adapters.Session{}, err
+		return adapters.GothSession{}, err
 	}
 
 	return session, nil
@@ -303,10 +303,10 @@ func (a *tbac) RefreshSession(ctx context.Context, session adapters.Session) (ad
 
 // DeleteUser ...
 func (a *tbac) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	return a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.User{}).Error
+	return a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.GothUser{}).Error
 }
 
 // LinkAccount ...
 func (a *tbac) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
-	return a.db.WithContext(ctx).Model(&adapters.Account{}).Where("id = ?", accountID).Update("user_id", userID).Error
+	return a.db.WithContext(ctx).Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
 }
