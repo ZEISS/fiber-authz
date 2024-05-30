@@ -7,7 +7,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.59.0
 	github.com/goreleaser/goreleaser v1.26.2
-	gotest.tools/gotestsum v1.11.0
+	gotest.tools/gotestsum v1.12.0
 	mvdan.cc/gofumpt v0.6.0
 )
 
@@ -94,7 +94,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bitfield/gotestdox v0.2.1 // indirect
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
 	github.com/blacktop/go-dwarf v1.0.9 // indirect
 	github.com/blacktop/go-macho v1.1.162 // indirect
