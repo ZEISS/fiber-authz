@@ -5,7 +5,7 @@ go 1.21.9
 toolchain go1.22.2
 
 require (
-	github.com/deepmap/oapi-codegen/v2 v2.1.0
+	github.com/deepmap/oapi-codegen/v2 v2.2.0
 	github.com/getkin/kin-openapi v0.124.0
 	github.com/go-playground/validator/v10 v10.21.0
 	github.com/gofiber/fiber/v2 v2.52.4
