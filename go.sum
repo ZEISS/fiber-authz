@@ -323,8 +323,8 @@ github.com/nishanths/predeclared v0.2.2 h1:V2EPdZPliZymNAn79T8RkNApBjMmVKh5XRpLm
 github.com/nishanths/predeclared v0.2.2/go.mod h1:RROzoN6TnGQupbC+lqggsOlcgysk3LMK/HI84Mp280c=
 github.com/nunnatsa/ginkgolinter v0.16.2 h1:8iLqHIZvN4fTLDC0Ke9tbSZVcyVHoBs0HIbnVSxfHJk=
 github.com/nunnatsa/ginkgolinter v0.16.2/go.mod h1:4tWRinDN1FeJgU+iJANW/kz7xKN5nYRAOfJDQUS9dOQ=
-github.com/oapi-codegen/fiber-middleware v1.0.1 h1:DZQA+tEsqEMox4pPmc6SJXvDriiWSxc3QiA4UuMwGq4=
-github.com/oapi-codegen/fiber-middleware v1.0.1/go.mod h1:UUVrHLPT4Zv7S2U2TCGLXpTx6mfMb613UI+Z6F8S5Vk=
+github.com/oapi-codegen/fiber-middleware v1.0.2 h1:f4KPdjyRTYh2GyAv9wsDP+Q9akOND17wuMSbmMwDkJI=
+github.com/oapi-codegen/fiber-middleware v1.0.2/go.mod h1:+lGj+802Ajp/+fQG9d8t1SuYP8r7lnOc6wnOwwRArYg=
 github.com/olekukonko/tablewriter v0.0.5 h1:P2Ga83D34wi1o9J6Wh1mRuqd4mF/x/lgBS7N7AbDhec=
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
 github.com/onsi/ginkgo/v2 v2.17.3 h1:oJcvKpIb7/8uLpDDtnQuf18xVnwKp8DTD7DQ6gTd/MU=
