@@ -1,4 +1,4 @@
-package authz
+package tbrac
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	authz "github.com/zeiss/fiber-authz"
 	"github.com/zeiss/fiber-goth/adapters"
 	"gorm.io/gorm"
 )
@@ -203,8 +204,8 @@ type APIKeyRole struct {
 }
 
 var (
-	_ AuthzChecker     = (*tbac)(nil)
-	_ adapters.Adapter = (*tbac)(nil)
+	_ authz.AuthzChecker = (*tbac)(nil)
+	_ adapters.Adapter   = (*tbac)(nil)
 )
 
 type tbac struct {
@@ -221,7 +222,7 @@ func NewTBAC(db *gorm.DB) *tbac {
 }
 
 // Allowed is a method that returns true if the principal is allowed to perform the action on the user.
-func (t *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object AuthzObject, action AuthzAction) (bool, error) {
+func (t *tbac) Allowed(ctx context.Context, principal authz.AuthzPrincipal, object authz.AuthzObject, action authz.AuthzAction) (bool, error) {
 	var allowed int64
 
 	team := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
@@ -239,8 +240,8 @@ func (t *tbac) Allowed(ctx context.Context, principal AuthzPrincipal, object Aut
 }
 
 // Resolve ...
-func (t *tbac) Resolve(c *fiber.Ctx) (AuthzObject, error) {
-	return AuthzObject(c.Params("team")), nil
+func (t *tbac) Resolve(c *fiber.Ctx) (authz.AuthzObject, error) {
+	return authz.AuthzObject(c.Params("team")), nil
 }
 
 // CreateUser ...

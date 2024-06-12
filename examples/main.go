@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	authz "github.com/zeiss/fiber-authz"
+	"github.com/zeiss/fiber-authz/tbrac"
 
 	"github.com/gofiber/fiber/v2"
 	ll "github.com/gofiber/fiber/v2/middleware/logger"
@@ -150,7 +151,7 @@ func run(_ context.Context) error {
 
 	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
 
-	err = authz.RunMigrations(conn)
+	err = tbrac.RunMigrations(conn)
 	if err != nil {
 		return err
 	}
@@ -174,11 +175,6 @@ func run(_ context.Context) error {
 	}
 
 	app.Use(goth.NewProtectMiddleware(gothConfig))
-	app.Use(authz.SetAuthzHandler(authz.NewNoopObjectResolver(), authz.NewNoopActionResolver(), authz.NewGothAuthzPrincipalResolver()))
-
-	config := authz.Config{
-		Checker: authz.NewTBAC(conn),
-	}
 
 	indexHandler := func(c *fiber.Ctx) error {
 		session, err := goth.SessionFromContext(c)
@@ -194,7 +190,9 @@ func run(_ context.Context) error {
 		return t.Execute(c.Response().BodyWriter(), providerIndex)
 	})
 
-	app.Get("/:team", authz.NewTBACHandler(indexHandler, authz.AuthzAction("admin"), "team", config))
+	team := app.Get("/:team", authz.Authenticate(indexHandler))
+	team.Use()
+
 	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
 	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
 	app.Get("/logout", goth.NewLogoutHandler(gothConfig))

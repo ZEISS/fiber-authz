@@ -35,18 +35,21 @@ func (a AuthzAction) String() string {
 }
 
 const (
-	AuthzNoPrincipial = ""
-	AuthzNoObject     = ""
-	AuthzNoAction     = ""
+	AuthzNoPrincipial AuthzPrincipal = ""
+	AuthzNoObject     AuthzObject    = ""
+	AuthzNoAction     AuthzAction    = ""
 )
 
-// AuthzActionDefaults are the default actions.
-const (
-	Read       AuthzAction = "read"
-	Write      AuthzAction = "write"
-	Admin      AuthzAction = "admin"
-	SuperAdmin AuthzAction = "superadmin"
-)
+// AuthzParams is the struct that holds the principal, object and action from the context.
+// There needs to be a :principal, :object and :action in the context.
+type AuthzParams struct {
+	// Principal is the subject.
+	Principal AuthzPrincipal `json:"principal" params:"principal" query:"principal" form:"principal"`
+	// Object is the object.
+	Object AuthzObject `json:"object" params:"object" query:"object" form:"object"`
+	// Action is the action.
+	Action AuthzAction `json:"action" params:"action" query:"action" form:"action"`
+}
 
 // AuthzChecker is the interface that wraps the Allowed method.
 type AuthzChecker interface {
@@ -99,6 +102,15 @@ type Config struct {
 	// Checker is implementing the AuthzChecker interface.
 	Checker AuthzChecker
 
+	// ObjectResolver is the object resolver.
+	ObjectResolver AuthzObjectResolver
+
+	// ActionResolver is the action resolver.
+	ActionResolver AuthzActionResolver
+
+	// PrincipalResolver is the principal resolver.
+	PrincipalResolver AuthzPrincipalResolver
+
 	// ErrorHandler is executed when an error is returned from fiber.Handler.
 	//
 	// Optional. Default: DefaultErrorHandler
@@ -107,8 +119,11 @@ type Config struct {
 
 // ConfigDefault is the default config.
 var ConfigDefault = Config{
-	ErrorHandler: defaultErrorHandler,
-	Checker:      NewNoop(),
+	ErrorHandler:      defaultErrorHandler,
+	ObjectResolver:    NewNoopObjectResolver(),
+	PrincipalResolver: NewNoopPrincipalResolver(),
+	ActionResolver:    NewNoopActionResolver(),
+	Checker:           NewNoop(),
 }
 
 // default ErrorHandler that process return error from fiber.Handler
@@ -134,31 +149,8 @@ type AuthzActionResolver interface {
 	Resolve(c *fiber.Ctx) (AuthzAction, error)
 }
 
-// SetAuthzHandler is a middleware that sets the principal and user in the context.
-// This function can map any thing.
-func SetAuthzHandler(object AuthzObjectResolver, action AuthzActionResolver, principal AuthzPrincipalResolver) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		object, err := object.Resolve(c)
-		if err != nil {
-			return err
-		}
-
-		principal, err := principal.Resolve(c)
-		if err != nil {
-			return err
-		}
-
-		action, err := action.Resolve(c)
-		if err != nil {
-			return err
-		}
-
-		return ContextWithAuthz(c, principal, object, action).Next()
-	}
-}
-
-// NewTBACHandler there is a new fiber.Handler that checks if the principal can perform the action on the object.
-func NewTBACHandler(handler fiber.Handler, action AuthzAction, param string, config ...Config) fiber.Handler {
+// Authenticate is a middleware that sets the principal and user in the context.
+func Authenticate(handler fiber.Handler, config ...Config) func(c *fiber.Ctx) error {
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
@@ -166,16 +158,24 @@ func NewTBACHandler(handler fiber.Handler, action AuthzAction, param string, con
 			return c.Next()
 		}
 
-		team := AuthzObject(c.Params(param, ""))
-
-		principal, _, _, err := AuthzFromContext(c)
+		object, err := cfg.ObjectResolver.Resolve(c)
 		if err != nil {
-			return defaultErrorHandler(c, err)
+			return err
 		}
 
-		allowed, err := cfg.Checker.Allowed(c.Context(), principal, team, action)
+		principal, err := cfg.PrincipalResolver.Resolve(c)
 		if err != nil {
-			return defaultErrorHandler(c, err)
+			return err
+		}
+
+		action, err := cfg.ActionResolver.Resolve(c)
+		if err != nil {
+			return err
+		}
+
+		allowed, err := cfg.Checker.Allowed(c.Context(), principal, object, action)
+		if err != nil {
+			return cfg.ErrorHandler(c, err)
 		}
 
 		if !allowed {
@@ -202,12 +202,12 @@ func NewCheckerHandler(config ...Config) fiber.Handler {
 		}{}
 
 		if err := c.BodyParser(&payload); err != nil {
-			return defaultErrorHandler(c, err)
+			return cfg.ErrorHandler(c, err)
 		}
 
 		allowed, err := cfg.Checker.Allowed(c.Context(), payload.Principal, payload.Object, payload.Permission)
 		if err != nil {
-			return defaultErrorHandler(c, err)
+			return cfg.ErrorHandler(c, err)
 		}
 
 		if allowed {
@@ -216,24 +216,6 @@ func NewCheckerHandler(config ...Config) fiber.Handler {
 
 		return c.SendStatus(403)
 	}
-}
-
-// ContextWithAuthz returns a new context with the principal, object and action set.
-func ContextWithAuthz(ctx *fiber.Ctx, principal AuthzPrincipal, object AuthzObject, action AuthzAction) *fiber.Ctx {
-	ctx.Locals(authzPrincipial, principal)
-	ctx.Locals(authzObject, object)
-	ctx.Locals(authzAction, action)
-
-	return ctx
-}
-
-// AuthzFromContext return the principal, object and action from the context.
-func AuthzFromContext(ctx *fiber.Ctx) (AuthzPrincipal, AuthzObject, AuthzAction, error) {
-	principal := ctx.Locals(authzPrincipial)
-	object := ctx.Locals(authzObject)
-	action := ctx.Locals(authzAction)
-
-	return principal.(AuthzPrincipal), object.(AuthzObject), action.(AuthzAction), nil
 }
 
 // Helper function to set default values
@@ -251,6 +233,18 @@ func configDefault(config ...Config) Config {
 
 	if cfg.ErrorHandler == nil {
 		cfg.ErrorHandler = ConfigDefault.ErrorHandler
+	}
+
+	if cfg.ObjectResolver == nil {
+		cfg.ObjectResolver = ConfigDefault.ObjectResolver
+	}
+
+	if cfg.PrincipalResolver == nil {
+		cfg.PrincipalResolver = ConfigDefault.PrincipalResolver
+	}
+
+	if cfg.ActionResolver == nil {
+		cfg.ActionResolver = ConfigDefault.ActionResolver
 	}
 
 	return cfg
