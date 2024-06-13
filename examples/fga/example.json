@@ -1,0 +1,906 @@
+{
+  "schema_version": "1.1",
+  "type_definitions": [
+    {
+      "type": "user",
+      "relations": {},
+      "metadata": null
+    },
+    {
+      "type": "team",
+      "relations": {
+        "admin": {
+          "this": {}
+        },
+        "can_add_admin": {
+          "computedUserset": {
+            "object": "",
+            "relation": "can_add_owner"
+          }
+        },
+        "can_add_editor": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "can_add_admin"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "can_add_owner": {
+          "computedUserset": {
+            "object": "",
+            "relation": "owner"
+          }
+        },
+        "can_add_viewer": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "can_add_editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              }
+            ]
+          }
+        },
+        "can_create_environment": {
+          "computedUserset": {
+            "object": "",
+            "relation": "editor"
+          }
+        },
+        "can_create_lens": {
+          "computedUserset": {
+            "object": "",
+            "relation": "editor"
+          }
+        },
+        "can_create_profile": {
+          "computedUserset": {
+            "object": "",
+            "relation": "editor"
+          }
+        },
+        "can_create_workload": {
+          "computedUserset": {
+            "object": "",
+            "relation": "editor"
+          }
+        },
+        "can_delete": {
+          "computedUserset": {
+            "object": "",
+            "relation": "owner"
+          }
+        },
+        "can_delete_owner": {
+          "computedUserset": {
+            "object": "",
+            "relation": "can_add_owner"
+          }
+        },
+        "editor": {
+          "union": {
+            "child": [
+              {
+                "this": {}
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "owner": {
+          "this": {}
+        },
+        "viewer": {
+          "union": {
+            "child": [
+              {
+                "this": {}
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "relations": {
+          "admin": {
+            "directly_related_user_types": [
+              {
+                "type": "user",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "can_add_admin": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_add_editor": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_add_owner": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_add_viewer": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_create_environment": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_create_lens": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_create_profile": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_create_workload": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_delete": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_delete_owner": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "editor": {
+            "directly_related_user_types": [
+              {
+                "type": "user",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "owner": {
+            "directly_related_user_types": [
+              {
+                "type": "user",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "viewer": {
+            "directly_related_user_types": [
+              {
+                "type": "user",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          }
+        },
+        "module": "",
+        "source_info": null
+      }
+    },
+    {
+      "type": "workload",
+      "relations": {
+        "admin": {
+          "tupleToUserset": {
+            "tupleset": {
+              "object": "",
+              "relation": "team"
+            },
+            "computedUserset": {
+              "object": "",
+              "relation": "admin"
+            }
+          }
+        },
+        "can_delete": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "can_read": {
+          "computedUserset": {
+            "object": "",
+            "relation": "viewer"
+          }
+        },
+        "can_share": {
+          "computedUserset": {
+            "object": "",
+            "relation": "admin"
+          }
+        },
+        "can_write": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "editor": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "editor"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "team": {
+          "this": {}
+        },
+        "viewer": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "viewer"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "relations": {
+          "admin": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_delete": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_read": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_share": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_write": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "editor": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "team": {
+            "directly_related_user_types": [
+              {
+                "type": "team",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "viewer": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          }
+        },
+        "module": "",
+        "source_info": null
+      }
+    },
+    {
+      "type": "profile",
+      "relations": {
+        "admin": {
+          "tupleToUserset": {
+            "tupleset": {
+              "object": "",
+              "relation": "team"
+            },
+            "computedUserset": {
+              "object": "",
+              "relation": "admin"
+            }
+          }
+        },
+        "can_delete": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "can_read": {
+          "computedUserset": {
+            "object": "",
+            "relation": "viewer"
+          }
+        },
+        "can_share": {
+          "computedUserset": {
+            "object": "",
+            "relation": "admin"
+          }
+        },
+        "can_write": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "editor": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "editor"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "team": {
+          "this": {}
+        },
+        "viewer": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "viewer"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "relations": {
+          "admin": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_delete": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_read": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_share": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_write": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "editor": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "team": {
+            "directly_related_user_types": [
+              {
+                "type": "team",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "viewer": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          }
+        },
+        "module": "",
+        "source_info": null
+      }
+    },
+    {
+      "type": "lens",
+      "relations": {
+        "admin": {
+          "tupleToUserset": {
+            "tupleset": {
+              "object": "",
+              "relation": "team"
+            },
+            "computedUserset": {
+              "object": "",
+              "relation": "admin"
+            }
+          }
+        },
+        "can_delete": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "can_read": {
+          "computedUserset": {
+            "object": "",
+            "relation": "viewer"
+          }
+        },
+        "can_share": {
+          "computedUserset": {
+            "object": "",
+            "relation": "admin"
+          }
+        },
+        "can_write": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "editor": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "editor"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "team": {
+          "this": {}
+        },
+        "viewer": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "viewer"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "relations": {
+          "admin": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_delete": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_read": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_share": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_write": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "editor": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "team": {
+            "directly_related_user_types": [
+              {
+                "type": "team",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "viewer": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          }
+        },
+        "module": "",
+        "source_info": null
+      }
+    },
+    {
+      "type": "environment",
+      "relations": {
+        "admin": {
+          "tupleToUserset": {
+            "tupleset": {
+              "object": "",
+              "relation": "team"
+            },
+            "computedUserset": {
+              "object": "",
+              "relation": "admin"
+            }
+          }
+        },
+        "can_delete": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "can_read": {
+          "computedUserset": {
+            "object": "",
+            "relation": "viewer"
+          }
+        },
+        "can_share": {
+          "computedUserset": {
+            "object": "",
+            "relation": "admin"
+          }
+        },
+        "can_write": {
+          "union": {
+            "child": [
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "editor": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "editor"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "admin"
+                }
+              }
+            ]
+          }
+        },
+        "team": {
+          "this": {}
+        },
+        "viewer": {
+          "union": {
+            "child": [
+              {
+                "tupleToUserset": {
+                  "tupleset": {
+                    "object": "",
+                    "relation": "team"
+                  },
+                  "computedUserset": {
+                    "object": "",
+                    "relation": "viewer"
+                  }
+                }
+              },
+              {
+                "computedUserset": {
+                  "object": "",
+                  "relation": "editor"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "relations": {
+          "admin": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_delete": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_read": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_share": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "can_write": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "editor": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          },
+          "team": {
+            "directly_related_user_types": [
+              {
+                "type": "team",
+                "condition": ""
+              }
+            ],
+            "module": "",
+            "source_info": null
+          },
+          "viewer": {
+            "directly_related_user_types": [],
+            "module": "",
+            "source_info": null
+          }
+        },
+        "module": "",
+        "source_info": null
+      }
+    }
+  ],
+  "conditions": {}
+}
