@@ -29,15 +29,15 @@ type JWSValidator interface {
 // NewAuthenticator ...
 func NewAuthenticator(c AuthzChecker, v JWSValidator) openapi3filter.AuthenticationFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-		return Authenticate(ctx, c, v, input)
+		return Authenticated(ctx, c, v, input)
 	}
 }
 
 // ErrForbidden ...
 var ErrForbidden = errors.New("forbidden")
 
-// Authenticate ...
-func Authenticate(ctx context.Context, checker AuthzChecker, validate JWSValidator, input *openapi3filter.AuthenticationInput) error {
+// Authenticated ...
+func Authenticated(ctx context.Context, checker AuthzChecker, validate JWSValidator, input *openapi3filter.AuthenticationInput) error {
 	if input.SecuritySchemeName != "BearerAuth" {
 		return fmt.Errorf("security scheme %s != 'BearerAuth'", input.SecuritySchemeName)
 	}
