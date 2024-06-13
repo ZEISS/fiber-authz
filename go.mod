@@ -19,7 +19,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.1
-	gorm.io/driver/postgres v1.5.8
+	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.10
 	mvdan.cc/gofumpt v0.6.0
 )
