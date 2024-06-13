@@ -16,7 +16,6 @@ func main() {
 		StoreId:              os.Getenv("FGA_STORE_ID"), // optional, not needed for \`CreateStore\` and \`ListStores\`, required before calling for all other methods
 		AuthorizationModelId: os.Getenv("FGA_MODEL_ID"), // Optional, can be overridden per request
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +42,6 @@ func main() {
 	data, err := fgaClient.WriteAuthorizationModel(context.Background()).
 		Body(body).
 		Execute()
-
 	if err != nil {
 		panic(err)
 	}
