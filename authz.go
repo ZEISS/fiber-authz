@@ -150,7 +150,7 @@ type AuthzActionResolver interface {
 }
 
 // Authenticate is a middleware that sets the principal and user in the context.
-func Authenticate(handler fiber.Handler, config ...Config) func(c *fiber.Ctx) error {
+func Authenticate(handler fiber.Handler, config ...Config) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return func(c *fiber.Ctx) error {
