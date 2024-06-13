@@ -27,9 +27,10 @@ func main() {
 	}
 
 	log.Println(resp.Id)
+	fgaClient.SetStoreId(resp.Id)
 
 	// Read in example.json file into string.
-	model, err := os.ReadFile("example.json")
+	model, err := os.ReadFile("./examples/fga/example.json")
 	if err != nil {
 		panic(err)
 	}
@@ -48,4 +49,30 @@ func main() {
 	}
 
 	log.Println(data.AuthorizationModelId)
+
+	options := client.ClientWriteOptions{
+		AuthorizationModelId: openfga.PtrString(data.AuthorizationModelId),
+	}
+
+	writes := client.ClientWriteRequest{
+		Writes: []client.ClientTupleKey{
+			{
+				User:     "team:zeiss",
+				Relation: "team",
+				Object:   "workload:foo",
+			},
+			{
+				User:     "user:katallaxie",
+				Relation: "admin",
+				Object:   "team:zeiss",
+			},
+		},
+	}
+
+	write, err := fgaClient.Write(context.Background()).Body(writes).Options(options).Execute()
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println(write.Writes)
 }
