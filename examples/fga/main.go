@@ -63,7 +63,7 @@ func main() {
 			},
 			{
 				User:     "user:katallaxie",
-				Relation: "admin",
+				Relation: "editor",
 				Object:   "team:zeiss",
 			},
 		},

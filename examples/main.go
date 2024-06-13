@@ -2,25 +2,17 @@ package main
 
 import (
 	"context"
-	"html/template"
 	"log"
 	"os"
-	"sort"
 
+	"github.com/openfga/go-sdk/client"
 	authz "github.com/zeiss/fiber-authz"
-	"github.com/zeiss/fiber-authz/tbrac"
 
 	"github.com/gofiber/fiber/v2"
 	ll "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/katallaxie/pkg/logger"
 	"github.com/spf13/cobra"
-	goth "github.com/zeiss/fiber-goth"
-	gorm_adapter "github.com/zeiss/fiber-goth/adapters/gorm"
-	"github.com/zeiss/fiber-goth/providers"
-	"github.com/zeiss/fiber-goth/providers/github"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 // Config ...
@@ -55,7 +47,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":3000", "addr")
+	rootCmd.PersistentFlags().StringVar(&cfg.Flags.Addr, "addr", ":8084", "addr")
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Database, "db-database", cfg.Flags.DB.Database, "Database name")
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Username, "db-username", cfg.Flags.DB.Username, "Database user")
 	rootCmd.PersistentFlags().StringVar(&cfg.Flags.DB.Password, "db-password", cfg.Flags.DB.Password, "Database password")
@@ -70,132 +62,26 @@ func run(_ context.Context) error {
 
 	logger.RedirectStdLog(logger.LogSink)
 
-	dsn := "host=host.docker.internal user=example password=example dbname=example port=5432 sslmode=disable"
-	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	fgaClient, err := client.NewSdkClient(&client.ClientConfiguration{
+		ApiUrl:               os.Getenv("FGA_API_URL"),  // required, e.g. https://api.fga.example
+		StoreId:              os.Getenv("FGA_STORE_ID"), // optional, not needed for \`CreateStore\` and \`ListStores\`, required before calling for all other methods
+		AuthorizationModelId: os.Getenv("FGA_MODEL_ID"), // Optional, can be overridden per request
+	})
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	ga, err := gorm_adapter.New(conn)
-	if err != nil {
-		return err
-	}
-
-	m := map[string]string{
-		"amazon":          "Amazon",
-		"apple":           "Apple",
-		"auth0":           "Auth0",
-		"azuread":         "Azure AD",
-		"battlenet":       "Battle.net",
-		"bitbucket":       "Bitbucket",
-		"box":             "Box",
-		"dailymotion":     "Dailymotion",
-		"deezer":          "Deezer",
-		"digitalocean":    "Digital Ocean",
-		"discord":         "Discord",
-		"dropbox":         "Dropbox",
-		"eveonline":       "Eve Online",
-		"facebook":        "Facebook",
-		"fitbit":          "Fitbit",
-		"gitea":           "Gitea",
-		"github":          "Github",
-		"gitlab":          "Gitlab",
-		"google":          "Google",
-		"gplus":           "Google Plus",
-		"heroku":          "Heroku",
-		"instagram":       "Instagram",
-		"intercom":        "Intercom",
-		"kakao":           "Kakao",
-		"lastfm":          "Last FM",
-		"line":            "LINE",
-		"linkedin":        "LinkedIn",
-		"mastodon":        "Mastodon",
-		"meetup":          "Meetup.com",
-		"microsoftonline": "Microsoft Online",
-		"naver":           "Naver",
-		"nextcloud":       "NextCloud",
-		"okta":            "Okta",
-		"onedrive":        "Onedrive",
-		"openid-connect":  "OpenID Connect",
-		"patreon":         "Patreon",
-		"paypal":          "Paypal",
-		"salesforce":      "Salesforce",
-		"seatalk":         "SeaTalk",
-		"shopify":         "Shopify",
-		"slack":           "Slack",
-		"soundcloud":      "SoundCloud",
-		"spotify":         "Spotify",
-		"steam":           "Steam",
-		"strava":          "Strava",
-		"stripe":          "Stripe",
-		"tiktok":          "TikTok",
-		"twitch":          "Twitch",
-		"twitter":         "Twitter",
-		"twitterv2":       "Twitter",
-		"typetalk":        "Typetalk",
-		"uber":            "Uber",
-		"vk":              "VK",
-		"wecom":           "WeCom",
-		"wepay":           "Wepay",
-		"xero":            "Xero",
-		"yahoo":           "Yahoo",
-		"yammer":          "Yammer",
-		"yandex":          "Yandex",
-		"zoom":            "Zoom",
-	}
-	var keys []string
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	providers.RegisterProvider(github.New(os.Getenv("GITHUB_KEY"), os.Getenv("GITHUB_SECRET"), "http://localhost:3000/auth/github/callback"))
-
-	err = tbrac.RunMigrations(conn)
-	if err != nil {
-		return err
-	}
+	client := authz.NewFGA(fgaClient)
 
 	app := fiber.New()
 	app.Use(requestid.New())
 	app.Use(ll.New())
 
-	providerIndex := &ProviderIndex{Providers: keys, ProvidersMap: m}
-	engine := template.New("views")
-
-	t, err := engine.Parse(indexTemplate)
-	if err != nil {
-		log.Fatal(err)
+	config := authz.Config{
+		Checker: client,
 	}
 
-	gothConfig := goth.Config{
-		Adapter:        ga,
-		Secret:         goth.GenerateKey(),
-		CookieHTTPOnly: true,
-	}
-
-	app.Use(goth.NewProtectMiddleware(gothConfig))
-
-	indexHandler := func(c *fiber.Ctx) error {
-		session, err := goth.SessionFromContext(c)
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(session)
-	}
-
-	app.Get("/login", func(c *fiber.Ctx) error {
-		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-		return t.Execute(c.Response().BodyWriter(), providerIndex)
-	})
-
-	team := app.Get("/:team", authz.Authenticate(indexHandler))
-	team.Use()
-
-	app.Get("/login/:provider", goth.NewBeginAuthHandler(gothConfig))
-	app.Get("/auth/:provider/callback", goth.NewCompleteAuthHandler(gothConfig))
-	app.Get("/logout", goth.NewLogoutHandler(gothConfig))
+	app.Post("/check", authz.NewCheckerHandler(config))
 
 	err = app.Listen(cfg.Flags.Addr)
 	if err != nil {
@@ -210,12 +96,3 @@ func main() {
 		panic(err)
 	}
 }
-
-type ProviderIndex struct {
-	Providers    []string
-	ProvidersMap map[string]string
-}
-
-var indexTemplate = `{{range $key,$value:=.Providers}}
-    <p><a href="/login/{{$value}}">Log in with {{index $.ProvidersMap $value}}</a></p>
-{{end}}`
