@@ -16,7 +16,7 @@ require (
 	github.com/lestrrat-go/jwx v1.2.29
 	github.com/oapi-codegen/fiber-middleware v1.0.2
 	github.com/openfga/go-sdk v0.4.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.1
 	gorm.io/gorm v1.25.10
