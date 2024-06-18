@@ -1,8 +1,7 @@
 module github.com/zeiss/fiber-authz
 
 go 1.21.9
-
-toolchain go1.22.2
+toolchain go1.22.4
 
 require (
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
@@ -18,7 +17,7 @@ require (
 	github.com/openfga/go-sdk v0.4.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
-	github.com/zeiss/fiber-goth v1.2.1
+	github.com/zeiss/fiber-goth v1.2.4
 	gorm.io/gorm v1.25.10
 	mvdan.cc/gofumpt v0.6.0
 )
@@ -201,7 +200,7 @@ require (
 	github.com/ultraware/whitespace v0.1.1 // indirect
 	github.com/uudashr/gocognit v1.1.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.53.0 // indirect
+	github.com/valyala/fasthttp v1.54.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/xen0n/gosmopolitan v1.2.2 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
