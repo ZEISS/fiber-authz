@@ -22,7 +22,7 @@ func (g *GothAuthzPrincipalResolver) Resolve(c *fiber.Ctx) (AuthzPrincipal, erro
 		return AuthzNoPrincipial, err
 	}
 
-	return AuthzPrincipal(fmt.Sprintf(authzPrincipalFormat, session.UserID.String())), nil
+	return AuthzPrincipal(fmt.Sprintf(authzPrincipalFormat, session.User.Email)), nil
 }
 
 // NewGothAuthzPrincipalResolver returns a new GothAuthzPrincipalResolver.
