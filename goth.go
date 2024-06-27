@@ -2,26 +2,30 @@ package authz
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	goth "github.com/zeiss/fiber-goth"
 )
 
-var _ AuthzPrincipalResolver = (*gothAuthzPrincipalResolver)(nil)
+const authzPrincipalFormat = "user:%s"
 
-type gothAuthzPrincipalResolver struct{}
+var _ AuthzPrincipalResolver = (*GothAuthzPrincipalResolver)(nil)
 
-// Resolve ...
-func (g *gothAuthzPrincipalResolver) Resolve(c *fiber.Ctx) (AuthzPrincipal, error) {
+// GothAuthzPrincipalResolver is the resolver that resolves the principal from the goth session.
+type GothAuthzPrincipalResolver struct{}
+
+// Resolve returns the principal from the goth session.
+func (g *GothAuthzPrincipalResolver) Resolve(c *fiber.Ctx) (AuthzPrincipal, error) {
 	session, err := goth.SessionFromContext(c)
 	if err != nil && !errors.Is(err, goth.ErrMissingSession) {
 		return AuthzNoPrincipial, err
 	}
 
-	return AuthzPrincipal(session.UserID.String()), nil
+	return AuthzPrincipal(fmt.Sprintf(authzPrincipalFormat, session.UserID.String())), nil
 }
 
-// NewGothAuthzPrincipalResolver ...
+// NewGothAuthzPrincipalResolver returns a new GothAuthzPrincipalResolver.
 func NewGothAuthzPrincipalResolver() AuthzPrincipalResolver {
-	return &gothAuthzPrincipalResolver{}
+	return &GothAuthzPrincipalResolver{}
 }
