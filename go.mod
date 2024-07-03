@@ -12,7 +12,7 @@ require (
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/google/uuid v1.6.0
-	github.com/katallaxie/pkg v0.6.5
+	github.com/katallaxie/pkg v0.6.6
 	github.com/lestrrat-go/jwx v1.2.29
 	github.com/oapi-codegen/fiber-middleware v1.0.2
 	github.com/openfga/go-sdk v0.5.0
