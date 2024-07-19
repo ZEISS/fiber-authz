@@ -15,29 +15,19 @@ const DefaultSeparator = "/"
 // DefaultNamespaceSeparator is the default separator for namespaces.
 const DefaultNamespaceSeparator = ":"
 
+// EntitiesString is a type that represents a list of entities.
+func EntityString[E Entities](e E) string {
+	return string(e)
+}
+
 // User is a type that represents a user.
 type User string
-
-// String returns the string representation of the user.
-func (u User) String() string {
-	return string(u)
-}
 
 // Relation is a type that represents a relation.
 type Relation string
 
-// String returns the string representation of the relation.
-func (r Relation) String() string {
-	return string(r)
-}
-
 // Object is a type that represents an object.
 type Object string
-
-// String returns the string representation of the object.
-func (o Object) String() string {
-	return string(o)
-}
 
 // NoopUser is a user that represents no user.
 const NoopUser User = ""
@@ -48,8 +38,8 @@ const NoopRelation Relation = ""
 // NoopObject is an object that represents no object.
 const NoopObject Object = ""
 
-// Stringers create a string an adds it to the representation.
-type Stringers func() string
+// Stringer create a string an adds it to the representation.
+type Stringer func() string
 
 // Entities is a type that represents a list of entities.
 type Entities interface {
@@ -57,7 +47,7 @@ type Entities interface {
 }
 
 // NewEntity returns a new User.
-func NewEntity[E Entities](s ...Stringers) E {
+func NewEntity[E Entities](s ...Stringer) E {
 	u := ""
 
 	for _, v := range s {
@@ -68,22 +58,22 @@ func NewEntity[E Entities](s ...Stringers) E {
 }
 
 // NewUser returns a new User.
-func NewUser(s ...Stringers) User {
+func NewUser(s ...Stringer) User {
 	return NewEntity[User](s...)
 }
 
 // NewRelation returns a new Relation.
-func NewRelation(s ...Stringers) Relation {
+func NewRelation(s ...Stringer) Relation {
 	return NewEntity[Relation](s...)
 }
 
 // NewObject returns a new Object.
-func NewObject(s ...Stringers) Object {
+func NewObject(s ...Stringer) Object {
 	return NewEntity[Object](s...)
 }
 
 // Namespace adds a namespace to the entity.
-func Namespace(namespace string, sep ...string) Stringers {
+func Namespace(namespace string, sep ...string) Stringer {
 	return func() string {
 		s := DefaultNamespaceSeparator
 
@@ -96,28 +86,28 @@ func Namespace(namespace string, sep ...string) Stringers {
 }
 
 // Join joins the entities with the separator.
-func Join(sep string, entities ...string) Stringers {
+func Join(sep string, entities ...string) Stringer {
 	return func() string {
 		return strings.Join(entities, sep)
 	}
 }
 
 // OidcSubject returns the OIDC subject.
-func OidcSubject(claims *oas.AuthClaims) Stringers {
+func OidcSubject(claims *oas.AuthClaims) Stringer {
 	return func() string {
 		return claims.Subject
 	}
 }
 
 // String returns the string representation of the entities.
-func String(s string) Stringers {
+func String(s string) Stringer {
 	return func() string {
 		return s
 	}
 }
 
 // RequestParams is a type that represents the parameters for a request.
-func RequestParams(c *fiber.Ctx, sep string, params ...string) Stringers {
+func RequestParams(c *fiber.Ctx, sep string, params ...string) Stringer {
 	return func() string {
 		for i, param := range params {
 			params[i] = c.Params(param)
@@ -143,9 +133,9 @@ type ClientImpl struct {
 // Allowed returns true if the user is allowed if the user has the relation on the object.
 func (c *ClientImpl) Allowed(ctx context.Context, user User, relation Relation, object Object) (bool, error) {
 	body := client.ClientCheckRequest{
-		User:     user.String(),
-		Relation: relation.String(),
-		Object:   object.String(),
+		User:     EntityString(user),
+		Relation: EntityString(relation),
+		Object:   EntityString(object),
 	}
 
 	allowed, err := c.client.Check(ctx).Body(body).Execute()

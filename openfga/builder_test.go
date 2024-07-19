@@ -7,7 +7,7 @@ import (
 	"github.com/zeiss/fiber-authz/openfga"
 )
 
-func TestUserBuilder(t *testing.T) {
+func TestNewUser(t *testing.T) {
 	tests := []struct {
 		name string
 		in   openfga.User
@@ -29,5 +29,11 @@ func TestUserBuilder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.out, tt.in)
 		})
+	}
+}
+
+func BenchmarkNewUser(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		openfga.NewUser(openfga.Namespace("user"), openfga.String("foo"), openfga.String("bar"), openfga.String("baz"))
 	}
 }
