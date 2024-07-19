@@ -27,6 +27,13 @@ const jwtToken contextKey = iota
 
 var jwkRefreshInterval = 48 * time.Hour
 
+var standardClaims = []string{
+	"email",
+	"email_verified",
+	"name",
+	"preferred_username",
+}
+
 var (
 	ErrNoAuthHeader      = fiber.NewError(fiber.StatusUnauthorized, "Authorization header is missing")
 	ErrInvalidAuthHeader = fiber.NewError(fiber.StatusUnauthorized, "Authorization header is invalid")

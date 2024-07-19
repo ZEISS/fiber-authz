@@ -2,14 +2,18 @@ package openfga
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/openfga/go-sdk/client"
+	"github.com/zeiss/fiber-authz/oas"
 )
 
 // DefaultSeparator is the default separator for entities.
 const DefaultSeparator = "/"
+
+// DefaultNamespaceSeparator is the default separator for namespaces.
+const DefaultNamespaceSeparator = ":"
 
 // User is a type that represents a user.
 type User string
@@ -44,70 +48,92 @@ const NoopRelation Relation = ""
 // NoopObject is an object that represents no object.
 const NoopObject Object = ""
 
-// Entities is a type that represents a set of entities.
+// Stringers create a string an adds it to the representation.
+type Stringers func() string
+
+// Entities is a type that represents a list of entities.
 type Entities interface {
 	User | Relation | Object
 }
 
-// Builder is an interface for building FGA queries.
-type Builder[T Entities] interface {
-	// Set sets the user.
-	Set(sep string, s ...string) Builder[T]
-	// Get returns the user.
-	Get() T
-	// SetNamespace sets the namespace on a user.
-	SetNamespace(namespace string) Builder[T]
+// NewEntity returns a new User.
+func NewEntity[E Entities](s ...Stringers) E {
+	u := ""
+
+	for _, v := range s {
+		u += v()
+	}
+
+	return E(u)
 }
 
-// Transformer is a function that transforms a Builder.
-type Transformer[T comparable] func(e T) T
-
-// NewBuilder returns a new Builder.
-func NewBuilder[T Entities]() Builder[T] {
-	return &BuilderImpl[T]{}
+// NewUser returns a new User.
+func NewUser(s ...Stringers) User {
+	return NewEntity[User](s...)
 }
 
-// BuilderImpl is an implementation of the Builder interface.
-type BuilderImpl[T Entities] struct {
-	user T
+// NewRelation returns a new Relation.
+func NewRelation(s ...Stringers) Relation {
+	return NewEntity[Relation](s...)
 }
 
-// Set sets the entity on the builder.
-func (b *BuilderImpl[T]) Set(sep string, entities ...string) Builder[T] {
-	b.user = set[T](sep, entities...)(b.user)
-	return b
+// NewObject returns a new Object.
+func NewObject(s ...Stringers) Object {
+	return NewEntity[Object](s...)
 }
 
-func set[T Entities](sep string, entities ...string) Transformer[T] {
-	return func(e T) T {
-		return T(fmt.Sprintf("%s%s", e, strings.Join(entities, sep)))
+// Namespace adds a namespace to the entity.
+func Namespace(namespace string, sep ...string) Stringers {
+	return func() string {
+		s := DefaultNamespaceSeparator
+
+		if len(sep) > 0 {
+			s = sep[0]
+		}
+
+		return namespace + s
 	}
 }
 
-// Get returns the entity that the query is for.
-func (b *BuilderImpl[T]) Get() T {
-	return b.user
+// Join joins the entities with the separator.
+func Join(sep string, entities ...string) Stringers {
+	return func() string {
+		return strings.Join(entities, sep)
+	}
 }
 
-// SetNamespace sets the namespace on the entity.
-func (b *BuilderImpl[T]) SetNamespace(namespace string) Builder[T] {
-	b.user = setNamespace[T](namespace)(b.user)
-	return b
+// OidcSubject returns the OIDC subject.
+func OidcSubject(claims *oas.AuthClaims) Stringers {
+	return func() string {
+		return claims.Subject
+	}
 }
 
-func setNamespace[T Entities](namespace string) Transformer[T] {
-	return func(e T) T {
-		return T(fmt.Sprintf("%s:%s", namespace, e))
+// String returns the string representation of the entities.
+func String(s string) Stringers {
+	return func() string {
+		return s
+	}
+}
+
+// RequestParams is a type that represents the parameters for a request.
+func RequestParams(c *fiber.Ctx, sep string, params ...string) Stringers {
+	return func() string {
+		for i, param := range params {
+			params[i] = c.Params(param)
+		}
+
+		return strings.Join(params, sep)
 	}
 }
 
 // Checker is an interface for checking permissions.
-type Checker[U, R, O Entities] interface {
+type Checker interface {
 	// Allowed returns true if the principal is allowed to perform the action on the user.
-	Allowed(ctx context.Context, user U, relation R, object O) (bool, error)
+	Allowed(ctx context.Context, user User, relation Relation, object Object) (bool, error)
 }
 
-var _ Checker[User, Relation, Object] = (*ClientImpl)(nil)
+var _ Checker = (*ClientImpl)(nil)
 
 // ClientImpl is an implementation of the Client interface.
 type ClientImpl struct {
