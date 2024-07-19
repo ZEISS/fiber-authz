@@ -148,5 +148,5 @@ func (c *ClientImpl) Allowed(ctx context.Context, user User, relation Relation, 
 
 // NewClient returns a new FGA client.
 func NewClient(c *client.OpenFgaClient) *ClientImpl {
-	return &ClientImpl{client: c}
+	return &ClientImpl{c}
 }
