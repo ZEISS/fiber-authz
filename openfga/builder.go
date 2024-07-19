@@ -2,85 +2,135 @@ package openfga
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/openfga/go-sdk/client"
 )
 
-// DatastoreError is an error that occurred while executing a operation.
-type DatastoreError struct {
-	// Details are details to the operation
-	Details string
-	// Err is the error that occurred.
-	Err error
+// DefaultSeparator is the default separator for entities.
+const DefaultSeparator = "/"
+
+// User is a type that represents a user.
+type User string
+
+// String returns the string representation of the user.
+func (u User) String() string {
+	return string(u)
 }
 
-// Error implements the error interface.
-func (e *DatastoreError) Error() string { return e.Details + ": " + e.Err.Error() }
+// Relation is a type that represents a relation.
+type Relation string
 
-// Unwrap implements the errors.Wrapper interface.
-func (e *DatastoreError) Unwrap() error { return e.Err }
+// String returns the string representation of the relation.
+func (r Relation) String() string {
+	return string(r)
+}
 
-// NewDatastoreError returns a new QueryError.
-func NewDatastoreError(details string, err error) *DatastoreError {
-	return &DatastoreError{
-		Details: details,
-		Err:     err,
+// Object is a type that represents an object.
+type Object string
+
+// String returns the string representation of the object.
+func (o Object) String() string {
+	return string(o)
+}
+
+// NoopUser is a user that represents no user.
+const NoopUser User = ""
+
+// NoopRelation is a relation that represents no relation.
+const NoopRelation Relation = ""
+
+// NoopObject is an object that represents no object.
+const NoopObject Object = ""
+
+// Entities is a type that represents a set of entities.
+type Entities interface {
+	User | Relation | Object
+}
+
+// Builder is an interface for building FGA queries.
+type Builder[T Entities] interface {
+	// Set sets the user.
+	Set(sep string, s ...string) Builder[T]
+	// Get returns the user.
+	Get() T
+	// SetNamespace sets the namespace on a user.
+	SetNamespace(namespace string) Builder[T]
+}
+
+// Transformer is a function that transforms a Builder.
+type Transformer[T comparable] func(e T) T
+
+// NewBuilder returns a new Builder.
+func NewBuilder[T Entities]() Builder[T] {
+	return &BuilderImpl[T]{}
+}
+
+// BuilderImpl is an implementation of the Builder interface.
+type BuilderImpl[T Entities] struct {
+	user T
+}
+
+// Set sets the entity on the builder.
+func (b *BuilderImpl[T]) Set(sep string, entities ...string) Builder[T] {
+	b.user = set[T](sep, entities...)(b.user)
+	return b
+}
+
+func set[T Entities](sep string, entities ...string) Transformer[T] {
+	return func(e T) T {
+		return T(fmt.Sprintf("%s%s", e, strings.Join(entities, sep)))
 	}
 }
 
-// Datastore provides methods for transactional operations.
-type Datastore[R, W any] interface {
-	// Read starts a read only transaction.
-	Read(context.Context, func(context.Context, R) error) error
-	// ReadWriteTx starts a read write transaction.
-	ReadWrite(context.Context, func(context.Context, W) error) error
+// Get returns the entity that the query is for.
+func (b *BuilderImpl[T]) Get() T {
+	return b.user
 }
 
-type datastoreImpl[R, W any] struct {
-	r      ReadFactory[R]
-	rw     ReadWriteFactory[W]
-	client client.SdkClient
+// SetNamespace sets the namespace on the entity.
+func (b *BuilderImpl[T]) SetNamespace(namespace string) Builder[T] {
+	b.user = setNamespace[T](namespace)(b.user)
+	return b
 }
 
-// ReadFactory is a function that creates a new instance of Datastore.
-type ReadFactory[R any] func(client.SdkClient) (R, error)
-
-// ReadWriteFactory is a function that creates a new instance of Datastore.
-type ReadWriteFactory[W any] func(client.SdkClient) (W, error)
-
-// NewDatastore returns a new instance of db.
-func NewDatastore[R, W any](client client.SdkClient, r ReadFactory[R], rw ReadWriteFactory[W]) (Datastore[R, W], error) {
-	return &datastoreImpl[R, W]{
-		client: client,
-	}, nil
+func setNamespace[T Entities](namespace string) Transformer[T] {
+	return func(e T) T {
+		return T(fmt.Sprintf("%s:%s", namespace, e))
+	}
 }
 
-// ReadWriteTx starts a read only transaction.
-func (d *datastoreImpl[R, W]) ReadWrite(ctx context.Context, fn func(context.Context, W) error) error {
-	tx, err := d.rw(d.client)
+// Checker is an interface for checking permissions.
+type Checker[U, R, O Entities] interface {
+	// Allowed returns true if the principal is allowed to perform the action on the user.
+	Allowed(ctx context.Context, user U, relation R, object O) (bool, error)
+}
+
+var _ Checker[User, Relation, Object] = (*ClientImpl)(nil)
+
+// ClientImpl is an implementation of the Client interface.
+type ClientImpl struct {
+	client *client.OpenFgaClient
+}
+
+// Allowed returns true if the user is allowed if the user has the relation on the object.
+func (c *ClientImpl) Allowed(ctx context.Context, user User, relation Relation, object Object) (bool, error) {
+	body := client.ClientCheckRequest{
+		User:     user.String(),
+		Relation: relation.String(),
+		Object:   object.String(),
+	}
+
+	allowed, err := c.client.Check(ctx).Body(body).Execute()
 	if err != nil {
-		return NewDatastoreError("read/write datastore", err)
+		return false, err
 	}
 
-	err = fn(ctx, tx)
-	if err != nil {
-		return NewDatastoreError("read/write datastore", err)
-	}
-
-	return nil
+	return allowed.GetAllowed(), nil
 }
 
-// ReadTx starts a read only transaction.
-func (d *datastoreImpl[R, W]) Read(ctx context.Context, fn func(context.Context, R) error) error {
-	tx, err := d.r(d.client)
-	if err != nil {
-		return NewDatastoreError("read datastore", err)
-	}
-
-	err = fn(ctx, tx)
-	if err != nil {
-		return NewDatastoreError("read datastore", err)
-	}
-
-	return nil
+// NewClient returns a new FGA client.
+func NewClient(c *client.OpenFgaClient) *ClientImpl {
+	return &ClientImpl{client: c}
 }
