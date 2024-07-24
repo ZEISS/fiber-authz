@@ -5,6 +5,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 	middleware "github.com/oapi-codegen/fiber-middleware"
 )
 
@@ -106,10 +107,13 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 		c := middleware.GetFiberContext(ctx)
 
+		// nolint:contextcheck
 		user, relation, object, err := options.Builder.BuildWithContext(c.UserContext(), input)
 		if err != nil {
 			return err
 		}
+
+		log.Debugw("OasAuthenticate", "user", user, "relation", relation, "object", object)
 
 		allowed, err := options.Checker.Allowed(c.UserContext(), user, relation, object)
 		if err != nil {
