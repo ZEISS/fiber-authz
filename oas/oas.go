@@ -104,6 +104,11 @@ func Authenticate(opts ...AuthenticatorOpt) openapi3filter.AuthenticationFunc {
 			return fiber.ErrForbidden
 		}
 
+		err := auth(ctx, input)
+		if err != nil {
+			return err
+		}
+
 		return auth(ctx, input)
 	}
 }

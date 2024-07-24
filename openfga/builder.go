@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/openfga/go-sdk/client"
-	"github.com/zeiss/fiber-authz/oas"
+	"github.com/zeiss/fiber-authz/oas/oidc"
 )
 
 // DefaultSeparator is the default separator for entities.
@@ -93,9 +93,11 @@ func Join(sep string, entities ...string) Stringer {
 }
 
 // OidcSubject returns the OIDC subject.
-func OidcSubject(claims *oas.AuthClaims) Stringer {
+func OidcSubject(ctx context.Context) Stringer {
+	claim, _ := oidc.GetJWTFromContext(ctx)
+
 	return func() string {
-		return claims.Subject
+		return claim.Subject
 	}
 }
 
