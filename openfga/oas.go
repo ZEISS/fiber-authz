@@ -110,7 +110,7 @@ type OasAuthenticateOpt func(*OasAuthenticateOpts)
 // OasDefaultAuthenticateOpts ...
 func OasDefaultAuthenticateOpts() OasAuthenticateOpts {
 	return OasAuthenticateOpts{
-		Builder: &OasFGAAuthzBuilder{},
+		Builder: NewOasFGAAuthzBuilder(),
 	}
 }
 
@@ -146,6 +146,19 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 
 		if !allowed {
 			return fiber.ErrForbidden
+		}
+
+		return nil
+	}
+}
+
+// Authenticate ...
+func Authenticate(fn ...openapi3filter.AuthenticationFunc) openapi3filter.AuthenticationFunc {
+	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+		for _, f := range fn {
+			if err := f(ctx, input); err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -225,22 +238,3 @@ func DefaultAuthorizerOpts() AuthorizerOpts {
 		DefaultAuthorizer: DefaultAuthorizer,
 	}
 }
-
-// // Authenticate ...
-// func Authenticate(opts ...AuthorizerOpt) openapi3filter.AuthenticationFunc {
-//   opts := DefaultAuthorizerOpts()
-
-// 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-//     auth, ok := opts.Authorizers[input.SecuritySchemeName]
-//     if !ok {
-//       return opts.DefaultAuthorizer(ctx, input)
-//     }
-
-//     err := auth(ctx, input)
-//     if err != nil {
-//       return err
-//     }
-
-//     return auth(ctx, input)
-// 	}
-// }
