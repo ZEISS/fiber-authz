@@ -13,25 +13,25 @@ import (
 
 // OasFGAAuthzOptionComponent ...
 type OasFGAAuthzOptionComponent struct {
-	In   string `json:"in"`
-	Name string `json:"name"`
-	Type string `json:"type"`
+	In   string `json:"in" mapstructure:"in"`
+	Name string `json:"name" mapstructure:"name"`
+	Type string `json:"type" mapstructure:"type"`
 }
 
 // OasFGAAuthzOption ...
 type OasFGAAuthzBuilderOption struct {
-	Namespace  string                       `json:"namespace"`
-	Name       string                       `json:"name"`
-	Separator  string                       `json:"separator"`
-	Components []OasFGAAuthzOptionComponent `json:"components"`
-	AuthType   string                       `json:"auth_type"`
+	Namespace  string                       `json:"namespace" mapstructure:"namespace"`
+	Name       string                       `json:"name" mapstructure:"name"`
+	Separator  string                       `json:"separator" mapstructure:"separator"`
+	Components []OasFGAAuthzOptionComponent `json:"components" mapstructure:"components"`
+	AuthType   string                       `json:"auth_type" mapstructure:"auth_type"`
 }
 
 // OasFGAAuthzBuilderOptions ...
 type OasFGAAuthzBuilderOptions struct {
-	User     OasFGAAuthzBuilderOption `json:"user"`
-	Object   OasFGAAuthzBuilderOption `json:"object"`
-	Relation OasFGAAuthzBuilderOption `json:"relation"`
+	User     OasFGAAuthzBuilderOption `json:"user" mapstructure:"user"`
+	Object   OasFGAAuthzBuilderOption `json:"object" mapstructure:"object"`
+	Relation OasFGAAuthzBuilderOption `json:"relation" mapstructure:"relation"`
 }
 
 // OasBuilder ...
@@ -137,7 +137,7 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 
 		log.Debugw("OasAuthenticate", "user", user, "relation", relation, "object", object)
 
-		allowed, err := options.Checker.Allowed(c.Context(), user, relation, object)
+		allowed, err := options.Checker.Allowed(ctx, user, relation, object)
 		if err != nil {
 			return fiber.ErrUnauthorized
 		}
