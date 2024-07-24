@@ -137,10 +137,12 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 
 		log.Debugw("OasAuthenticate", "user", user, "relation", relation, "object", object)
 
-		allowed, err := options.Checker.Allowed(c.UserContext(), user, relation, object)
+		allowed, err := options.Checker.Allowed(c.Context(), user, relation, object)
 		if err != nil {
 			return fiber.ErrUnauthorized
 		}
+
+		log.Debugw("OasAuthenticate", "allowed", allowed)
 
 		if !allowed {
 			return fiber.ErrForbidden
