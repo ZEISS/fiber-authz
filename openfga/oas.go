@@ -2,10 +2,12 @@ package openfga
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/mitchellh/mapstructure"
 	middleware "github.com/oapi-codegen/fiber-middleware"
 )
 
@@ -39,25 +41,40 @@ type OasBuilder interface {
 }
 
 // OasFGAAuthzBuilder ...
-type OasFGAAuthzBuilder struct {
-	Options OasFGAAuthzBuilderOptions `json:"options"`
+type OasFGAAuthzBuilder struct{}
+
+// NewOasFGAAuthzBuilder ...
+func NewOasFGAAuthzBuilder() *OasFGAAuthzBuilder {
+	return &OasFGAAuthzBuilder{}
 }
 
 // BuildWithContext ...
 func (f *OasFGAAuthzBuilder) BuildWithContext(ctx context.Context, input *openapi3filter.AuthenticationInput) (User, Relation, Object, error) {
-	return f.User(ctx, input), f.Relation(ctx, input), f.Object(ctx, input), nil
+	opts := &OasFGAAuthzBuilderOptions{}
+
+	ext, ok := input.RequestValidationInput.Route.Operation.Extensions["x-fiber-authz-fga"]
+	if !ok {
+		return NoopUser, NoopRelation, NoopObject, fmt.Errorf("no x-fiber-authz-fga extension found")
+	}
+
+	err := mapstructure.Decode(ext, opts)
+	if err != nil {
+		return NoopUser, NoopRelation, NoopObject, err
+	}
+
+	return f.User(ctx, input, opts), f.Relation(ctx, input, opts), f.Object(ctx, input, opts), nil
 }
 
 // User ...
-func (f *OasFGAAuthzBuilder) User(ctx context.Context, input *openapi3filter.AuthenticationInput) User {
-	return NewUser(Namespace(f.Options.User.Namespace), OidcSubject(ctx))
+func (f *OasFGAAuthzBuilder) User(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzBuilderOptions) User {
+	return NewUser(Namespace(opts.User.Namespace), OidcSubject(ctx))
 }
 
 // Object ...
-func (f *OasFGAAuthzBuilder) Object(ctx context.Context, input *openapi3filter.AuthenticationInput) Object {
+func (f *OasFGAAuthzBuilder) Object(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzBuilderOptions) Object {
 	ss := []string{}
 
-	for _, c := range f.Options.Object.Components {
+	for _, c := range opts.Object.Components {
 		switch c.In {
 		case "path":
 			ss = append(ss, PathParams(input.RequestValidationInput.PathParams, c.Name))
@@ -66,7 +83,12 @@ func (f *OasFGAAuthzBuilder) Object(ctx context.Context, input *openapi3filter.A
 		}
 	}
 
-	return NewObject(Namespace(f.Options.Object.Namespace), Join(f.Options.Object.Separator, ss...))
+	return NewObject(Namespace(opts.Object.Namespace), String(opts.Object.Name), Join(opts.Object.Separator, ss...))
+}
+
+// Relation ...
+func (f *OasFGAAuthzBuilder) Relation(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzBuilderOptions) Relation {
+	return NewRelation(String(opts.Relation.Name))
 }
 
 // OasAuthenticateOpts ...
@@ -142,11 +164,6 @@ func PathParams(params map[string]string, name string, v ...string) string {
 	}
 
 	return p
-}
-
-// Relation ...
-func (f *OasFGAAuthzBuilder) Relation(ctx context.Context, input *openapi3filter.AuthenticationInput) Relation {
-	return NewRelation(String(f.Options.User.Name))
 }
 
 // ResolverFunc is a function that resolves a user, relation, and object.
