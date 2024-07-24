@@ -5,6 +5,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
+	middleware "github.com/oapi-codegen/fiber-middleware"
 )
 
 // OasFGAAuthzOptionComponent ...
@@ -18,7 +19,7 @@ type OasFGAAuthzOptionComponent struct {
 type OasFGAAuthzBuilderOption struct {
 	Namespace  string                       `json:"namespace"`
 	Name       string                       `json:"name"`
-	Seperator  string                       `json:"seperator"`
+	Separator  string                       `json:"separator"`
 	Components []OasFGAAuthzOptionComponent `json:"components"`
 	AuthType   string                       `json:"auth_type"`
 }
@@ -64,7 +65,7 @@ func (f *OasFGAAuthzBuilder) Object(ctx context.Context, input *openapi3filter.A
 		}
 	}
 
-	return NewObject(Namespace(f.Options.Object.Namespace), Join(f.Options.Object.Seperator, ss...))
+	return NewObject(Namespace(f.Options.Object.Namespace), Join(f.Options.Object.Separator, ss...))
 }
 
 // OasAuthenticateOpts ...
@@ -103,12 +104,14 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 	options.Configure(opts...)
 
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-		user, relation, object, err := options.Builder.BuildWithContext(ctx, input)
+		c := middleware.GetFiberContext(ctx)
+
+		user, relation, object, err := options.Builder.BuildWithContext(c.UserContext(), input)
 		if err != nil {
 			return err
 		}
 
-		allowed, err := options.Checker.Allowed(ctx, user, relation, object)
+		allowed, err := options.Checker.Allowed(c.UserContext(), user, relation, object)
 		if err != nil {
 			return fiber.ErrUnauthorized
 		}
