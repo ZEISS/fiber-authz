@@ -151,6 +151,19 @@ func BuildRelation(ctx context.Context, input *openapi3filter.AuthenticationInpu
 type OasAuthenticateOpts struct {
 	Checker Checker
 	Builder OasBuilder
+	Next    OasAuthenticateNextFunc
+}
+
+// OasAuthenticateNextFunc ...
+type OasAuthenticateNextFunc func(context.Context, *openapi3filter.AuthenticationInput) bool
+
+// DefaultOasAuthenticateNextFunc ...
+func DefaultOasAuthenticateNextFunc(name string) OasAuthenticateNextFunc {
+	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) bool {
+		_, ok := input.RequestValidationInput.Route.Operation.Extensions[name]
+
+		return !ok
+	}
 }
 
 // OasAuthenticateOpts ...
@@ -167,6 +180,7 @@ type OasAuthenticateOpt func(*OasAuthenticateOpts)
 func OasDefaultAuthenticateOpts() OasAuthenticateOpts {
 	return OasAuthenticateOpts{
 		Builder: NewOasFGAAuthzBuilder(),
+		Next:    DefaultOasAuthenticateNextFunc(DefaultExtensionName),
 	}
 }
 
@@ -191,6 +205,10 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 		c := middleware.GetFiberContext(ctx)
+
+		if options.Next != nil && options.Next(ctx, input) {
+			return nil
+		}
 
 		// nolint:contextcheck
 		user, relation, object, err := options.Builder.BuildWithContext(c.UserContext(), input)

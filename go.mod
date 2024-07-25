@@ -17,6 +17,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/katallaxie/pkg v0.6.6
 	github.com/lestrrat-go/jwx v1.2.29
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oapi-codegen/fiber-middleware v1.0.2
 	github.com/openfga/go-sdk v0.5.0
 	github.com/spf13/cobra v1.8.1
@@ -148,7 +149,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mgechev/revive v1.3.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/moricho/tparallel v0.3.1 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
