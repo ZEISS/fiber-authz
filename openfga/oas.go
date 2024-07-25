@@ -11,27 +11,44 @@ import (
 	middleware "github.com/oapi-codegen/fiber-middleware"
 )
 
+// DefaultExtensionName is the default extension name.
+const DefaultExtensionName = "x-fiber-authz-fga"
+
+// ErrNoFGAAuthzBuilderExtensionFound is an error that indicates that no FGA authz builder extension was found.
+var ErrNoFGAAuthzBuilderExtensionFound = fmt.Errorf("no FGA authz builder extension found")
+
 // OasFGAAuthzOptionComponent ...
 type OasFGAAuthzOptionComponent struct {
-	In   string `json:"in" mapstructure:"in"`
+	// In is the location of the component.
+	In string `json:"in" mapstructure:"in"`
+	// Name is the name of the component.
 	Name string `json:"name" mapstructure:"name"`
+	// Type is the type of the component.
 	Type string `json:"type" mapstructure:"type"`
 }
 
 // OasFGAAuthzOption ...
-type OasFGAAuthzBuilderOption struct {
-	Namespace  string                       `json:"namespace" mapstructure:"namespace"`
-	Name       string                       `json:"name" mapstructure:"name"`
-	Separator  string                       `json:"separator" mapstructure:"separator"`
+type OasFGAAuthzOption struct {
+	// Namespace is the namespace of the option.
+	Namespace string `json:"namespace" mapstructure:"namespace"`
+	// Name is the name of the option.
+	Name string `json:"name" mapstructure:"name"`
+	// Separator is the separator of the option.
+	Separator string `json:"separator" mapstructure:"separator"`
+	// Components is the components of the option.
 	Components []OasFGAAuthzOptionComponent `json:"components" mapstructure:"components"`
-	AuthType   string                       `json:"auth_type" mapstructure:"auth_type"`
+	// AuthType is the auth type of the option.
+	AuthType string `json:"auth_type" mapstructure:"auth_type"`
 }
 
-// OasFGAAuthzBuilderOptions ...
-type OasFGAAuthzBuilderOptions struct {
-	User     OasFGAAuthzBuilderOption `json:"user" mapstructure:"user"`
-	Object   OasFGAAuthzBuilderOption `json:"object" mapstructure:"object"`
-	Relation OasFGAAuthzBuilderOption `json:"relation" mapstructure:"relation"`
+// OasFGAAuthzOptions ...
+type OasFGAAuthzOptions struct {
+	// User is the user option.
+	User OasFGAAuthzOption `json:"user" mapstructure:"user"`
+	// Relation is the relation option.
+	Relation OasFGAAuthzOption `json:"relation" mapstructure:"relation"`
+	// Object is the object option.
+	Object OasFGAAuthzOption `json:"object" mapstructure:"object"`
 }
 
 // OasBuilder ...
@@ -41,20 +58,59 @@ type OasBuilder interface {
 }
 
 // OasFGAAuthzBuilder ...
-type OasFGAAuthzBuilder struct{}
+type OasFGAAuthzBuilder struct {
+	opts OasFGAAuthzBuilderOpts
+}
+
+// OasFGAAuthzBuilderOpts ...
+type OasFGAAuthzBuilderOpts struct {
+	// PropertyName ...
+	PropertyName string
+}
+
+// Configure sets the configuration for the builder.
+func (c *OasFGAAuthzBuilderOpts) Configure(opts ...OasFGAAuthzBuilderOpt) {
+	for _, opt := range opts {
+		opt(c)
+	}
+}
+
+// OasFGAAuthzBuilderOpt ...
+type OasFGAAuthzBuilderOpt func(*OasFGAAuthzBuilderOpts)
 
 // NewOasFGAAuthzBuilder ...
-func NewOasFGAAuthzBuilder() *OasFGAAuthzBuilder {
-	return &OasFGAAuthzBuilder{}
+func NewOasFGAAuthzBuilder(opts ...OasFGAAuthzBuilderOpt) *OasFGAAuthzBuilder {
+	builder := new(OasFGAAuthzBuilder)
+
+	options := DefaultOasFGAAuthzBuilderOpts()
+	options.Configure(opts...)
+
+	builder.opts = options
+
+	return builder
+}
+
+// DefaultOasFGAAuthzBuilderOpts ...
+func DefaultOasFGAAuthzBuilderOpts() OasFGAAuthzBuilderOpts {
+	return OasFGAAuthzBuilderOpts{
+		PropertyName: DefaultExtensionName,
+	}
+}
+
+// WithOasFGAAuthzBuilderPropertyName sets the property name for the builder.
+func WithOasFGAAuthzBuilderPropertyName(name string) OasFGAAuthzBuilderOpt {
+	return func(o *OasFGAAuthzBuilderOpts) {
+		o.PropertyName = name
+	}
 }
 
 // BuildWithContext ...
 func (f *OasFGAAuthzBuilder) BuildWithContext(ctx context.Context, input *openapi3filter.AuthenticationInput) (User, Relation, Object, error) {
-	opts := &OasFGAAuthzBuilderOptions{}
+	opts := &OasFGAAuthzOptions{}
 
-	ext, ok := input.RequestValidationInput.Route.Operation.Extensions["x-fiber-authz-fga"]
+	ext, ok := input.RequestValidationInput.Route.Operation.Extensions[f.opts.PropertyName]
 	if !ok {
-		return NoopUser, NoopRelation, NoopObject, fmt.Errorf("no x-fiber-authz-fga extension found")
+		return NoopUser, NoopRelation, NoopObject, ErrNoFGAAuthzBuilderExtensionFound
 	}
 
 	err := mapstructure.Decode(ext, opts)
@@ -62,16 +118,16 @@ func (f *OasFGAAuthzBuilder) BuildWithContext(ctx context.Context, input *openap
 		return NoopUser, NoopRelation, NoopObject, err
 	}
 
-	return f.User(ctx, input, opts), f.Relation(ctx, input, opts), f.Object(ctx, input, opts), nil
+	return BuildUser(ctx, input, opts), BuildRelation(ctx, input, opts), BuildObject(ctx, input, opts), nil
 }
 
-// User ...
-func (f *OasFGAAuthzBuilder) User(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzBuilderOptions) User {
+// BuildUser ...
+func BuildUser(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) User {
 	return NewUser(Namespace(opts.User.Namespace), OidcSubject(ctx))
 }
 
 // Object ...
-func (f *OasFGAAuthzBuilder) Object(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzBuilderOptions) Object {
+func BuildObject(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Object {
 	ss := []string{}
 
 	for _, c := range opts.Object.Components {
@@ -86,8 +142,8 @@ func (f *OasFGAAuthzBuilder) Object(ctx context.Context, input *openapi3filter.A
 	return NewObject(Namespace(opts.Object.Namespace), String(opts.Object.Name), Join(opts.Object.Separator, ss...))
 }
 
-// Relation ...
-func (f *OasFGAAuthzBuilder) Relation(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzBuilderOptions) Relation {
+// BuildRelation ...
+func BuildRelation(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Relation {
 	return NewRelation(String(opts.Relation.Name))
 }
 
@@ -111,6 +167,13 @@ type OasAuthenticateOpt func(*OasAuthenticateOpts)
 func OasDefaultAuthenticateOpts() OasAuthenticateOpts {
 	return OasAuthenticateOpts{
 		Builder: NewOasFGAAuthzBuilder(),
+	}
+}
+
+// WithBuilder sets the builder for the authenticator.
+func WithBuilder(builder OasBuilder) OasAuthenticateOpt {
+	return func(o *OasAuthenticateOpts) {
+		o.Builder = builder
 	}
 }
 
@@ -152,7 +215,7 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 	}
 }
 
-// Authenticate ...
+// Authenticate evalutes the authentication functions in the order they are provided.
 func Authenticate(fn ...openapi3filter.AuthenticationFunc) openapi3filter.AuthenticationFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 		for _, f := range fn {
@@ -165,7 +228,7 @@ func Authenticate(fn ...openapi3filter.AuthenticationFunc) openapi3filter.Authen
 	}
 }
 
-// PathParam ...
+// PathParams extracts the path parameter from the path parameters.
 func PathParams(params map[string]string, name string, v ...string) string {
 	s := ""
 
@@ -179,62 +242,4 @@ func PathParams(params map[string]string, name string, v ...string) string {
 	}
 
 	return p
-}
-
-// ResolverFunc is a function that resolves a user, relation, and object.
-type ResolverFunc func(c *fiber.Ctx) (User, Relation, Object, error)
-
-// AuthzController is a controller that handles authorization.
-type AuthzController interface {
-	// Authorize authorizes a user, relation, and object.
-	Authorize(c *fiber.Ctx) (User, Relation, Object, error)
-}
-
-// OperationAuthorizeFunc ...
-type OperationAuthorizeFunc func(ctx context.Context, input *openapi3filter.AuthenticationInput) error
-
-// OperationAuthorizers ...
-type OperationAuthorizers map[string]OperationAuthorizeFunc
-
-// Add is a function that adds an operation authorizer.
-func (o OperationAuthorizers) Add(op string, f OperationAuthorizeFunc) {
-	o[op] = f
-}
-
-// AuthorizerOpts ...
-type AuthorizerOpts struct {
-	// Authorizers is a map of operation authorizers.
-	Authorizers OperationAuthorizers
-	// DefaultAuthorizer is the default authorizer.
-	DefaultAuthorizer OperationAuthorizeFunc
-}
-
-// Configure sets the configuration for the authorizer.
-func (c *AuthorizerOpts) Configure(opts ...AuthorizerOpt) {
-	for _, opt := range opts {
-		opt(c)
-	}
-}
-
-// AuthorizerOpt ...
-type AuthorizerOpt func(*AuthorizerOpts)
-
-// WithAuthorizers sets the authorizers for the authorizer.
-func WithAuthorizers(authorizers OperationAuthorizers) AuthorizerOpt {
-	return func(o *AuthorizerOpts) {
-		o.Authorizers = authorizers
-	}
-}
-
-// DefaultAuthorizer ...
-var DefaultAuthorizer = func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-	return fiber.ErrForbidden
-}
-
-// DefaultAuthorizerOpts returns the default authorizer options.
-func DefaultAuthorizerOpts() AuthorizerOpts {
-	return AuthorizerOpts{
-		Authorizers:       OperationAuthorizers{},
-		DefaultAuthorizer: DefaultAuthorizer,
-	}
 }

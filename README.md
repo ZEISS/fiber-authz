@@ -21,6 +21,36 @@ $ go get github.com/zeiss/fiber-authz
 
 Any authorization model can be implemented by implementing the `Authorizer` interface.
 
+## OpenAPI
+
+Using [OpenAPI Extensions](https://swagger.io/docs/specification/openapi-extensions/) individual operations can be protected with [OpenFGA](https://openfga.dev/).
+
+```yaml
+x-fiber-authz-fga:
+  user:
+    namespace: user
+    auth_type: oidc
+  relation:
+    name: admin
+  object:
+    namespace: system
+    components:
+      - in: params
+        name: teamId
+```
+
+There are three parts to the OpenAPI extension:
+
+- `user` - The user namespace and authentication type.
+- `relation` - The relation name.
+- `object` - The object namespace and components.
+
+Then there are components to construct the relation or object.
+
+- `in` - The location of the component (e.g. `params`).
+- `name` - The name of the component (e.g. `teamId`).
+- `type` - The type of the component (e.g. `string`).
+
 ## Examples
 
 See [examples](https://github.com/zeiss/fiber-authz/tree/master/examples) to understand the provided interfaces.
