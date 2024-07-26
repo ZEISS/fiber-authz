@@ -3,6 +3,7 @@ package openfga
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/gofiber/fiber/v2"
@@ -51,8 +52,8 @@ type OasFGAAuthzOptions struct {
 	Object OasFGAAuthzOption `json:"object" mapstructure:"object"`
 }
 
-// OasBuilder ...
-type OasBuilder interface {
+// OasFGABuilder ...
+type OasFGABuilder interface {
 	// BuildWithContext builds a user, relation, and object with a context.
 	BuildWithContext(ctx context.Context, input *openapi3filter.AuthenticationInput) (User, Relation, Object, error)
 }
@@ -121,7 +122,7 @@ func (f *OasFGAAuthzBuilder) BuildWithContext(ctx context.Context, input *openap
 	return BuildUser(ctx, input, opts), BuildRelation(ctx, input, opts), BuildObject(ctx, input, opts), nil
 }
 
-// BuildUser ...
+// BuildUser is a function that builds a user.
 func BuildUser(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) User {
 	return NewUser(Namespace(opts.User.Namespace), OidcSubject(ctx))
 }
@@ -134,6 +135,8 @@ func BuildObject(ctx context.Context, input *openapi3filter.AuthenticationInput,
 		switch c.In {
 		case "path":
 			ss = append(ss, PathParams(input.RequestValidationInput.PathParams, c.Name))
+		case "query":
+			ss = append(ss, QueryParams(input.RequestValidationInput.GetQueryParams(), c.Name))
 		default:
 			ss = append(ss, "")
 		}
@@ -144,20 +147,20 @@ func BuildObject(ctx context.Context, input *openapi3filter.AuthenticationInput,
 
 // BuildRelation ...
 func BuildRelation(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Relation {
-	return NewRelation(String(opts.Relation.Name))
+	return NewRelation(Namespace(opts.Relation.Namespace), String(opts.Relation.Name))
 }
 
-// OasAuthenticateOpts ...
+// OasAuthenticateOpts is a configuration for the authenticator.
 type OasAuthenticateOpts struct {
 	Checker Checker
-	Builder OasBuilder
+	Builder OasFGABuilder
 	Next    OasAuthenticateNextFunc
 }
 
-// OasAuthenticateNextFunc ...
+// OasAuthenticateNextFunc is a function that determines if the next function should be called.
 type OasAuthenticateNextFunc func(context.Context, *openapi3filter.AuthenticationInput) bool
 
-// DefaultOasAuthenticateNextFunc ...
+// DefaultOasAuthenticateNextFunc is the default next function for the authenticator.
 func DefaultOasAuthenticateNextFunc(name string) OasAuthenticateNextFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) bool {
 		_, ok := input.RequestValidationInput.Route.Operation.Extensions[name]
@@ -185,7 +188,7 @@ func OasDefaultAuthenticateOpts() OasAuthenticateOpts {
 }
 
 // WithBuilder sets the builder for the authenticator.
-func WithBuilder(builder OasBuilder) OasAuthenticateOpt {
+func WithBuilder(builder OasFGABuilder) OasAuthenticateOpt {
 	return func(o *OasAuthenticateOpts) {
 		o.Builder = builder
 	}
@@ -198,7 +201,7 @@ func WithChecker(checker Checker) OasAuthenticateOpt {
 	}
 }
 
-// OasAuthenticate ...
+// OasAuthenticate is an authentication function that uses the FGA authz builder and checker.
 func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFunc {
 	options := OasDefaultAuthenticateOpts()
 	options.Configure(opts...)
@@ -260,4 +263,9 @@ func PathParams(params map[string]string, name string, v ...string) string {
 	}
 
 	return p
+}
+
+// QueryParams extracts the query parameter from the query parameters.
+func QueryParams(values url.Values, name string, v ...string) string {
+	return values.Get(name)
 }

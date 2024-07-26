@@ -81,6 +81,10 @@ func Namespace(namespace string, sep ...string) Stringer {
 			s = sep[0]
 		}
 
+		if namespace == "" {
+			return ""
+		}
+
 		return namespace + s
 	}
 }

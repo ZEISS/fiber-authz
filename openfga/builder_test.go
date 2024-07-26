@@ -23,6 +23,11 @@ func TestNewUser(t *testing.T) {
 			in:   openfga.NewUser(openfga.Namespace("user"), openfga.Join(openfga.DefaultSeparator, "bar", "baz")),
 			out:  openfga.User("user:bar/baz"),
 		},
+		{
+			name: "empty namespace",
+			in:   openfga.NewUser(openfga.Namespace(""), openfga.String("foo")),
+			out:  openfga.User("foo"),
+		},
 	}
 
 	for _, tt := range tests {
