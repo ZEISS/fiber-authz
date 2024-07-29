@@ -88,6 +88,11 @@ func WithOIDCSchema(auth openapi3filter.AuthenticationFunc) AuthenticatorOpt {
 	return WithSchema("openIdConnect", auth)
 }
 
+// WithBearerSchema sets the bearer authentication schema for the authenticator.
+func WithBearerSchema(auth openapi3filter.AuthenticationFunc) AuthenticatorOpt {
+	return WithSchema("bearer", auth)
+}
+
 // WithBasicSchema sets the basic authentication schema for the authenticator.
 func WithBasicAuthSchema(auth openapi3filter.AuthenticationFunc) AuthenticatorOpt {
 	return WithSchema("basic", auth)
