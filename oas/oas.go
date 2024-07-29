@@ -104,7 +104,7 @@ func Authenticate(opts ...AuthenticatorOpt) openapi3filter.AuthenticationFunc {
 	options.Configure(opts...)
 
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
-		auth, ok := options.Schemas[input.SecurityScheme.Type]
+		auth, ok := options.Schemas[input.SecurityScheme.Scheme]
 		if !ok {
 			return fiber.ErrForbidden
 		}
