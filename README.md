@@ -47,7 +47,7 @@ There are three parts to the OpenAPI extension:
 
 Then there are components to construct the relation or object.
 
-- `in` - The location of the component (e.g. `params`).
+- `in` - The location of the component (e.g. `path`).
 - `name` - The name of the component (e.g. `teamId`).
 - `type` - The type of the component (e.g. `string`).
 
