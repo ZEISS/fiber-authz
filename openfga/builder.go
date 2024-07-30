@@ -23,11 +23,26 @@ func EntityString[E Entities](e E) string {
 // User is a type that represents a user.
 type User string
 
+// String returns the string representation of the entities.
+func (u User) String() string {
+	return string(u)
+}
+
 // Relation is a type that represents a relation.
 type Relation string
 
+// String returns the string representation of the entities.
+func (r Relation) String() string {
+	return string(r)
+}
+
 // Object is a type that represents an object.
 type Object string
+
+// String returns the string representation of the entities.
+func (o Object) String() string {
+	return string(o)
+}
 
 // NoopUser is a user that represents no user.
 const NoopUser User = ""
