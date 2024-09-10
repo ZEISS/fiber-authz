@@ -21,7 +21,7 @@ require (
 	github.com/openfga/go-sdk v0.6.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
-	github.com/zeiss/fiber-goth v1.2.11
+	github.com/zeiss/fiber-goth v1.2.12
 	gorm.io/gorm v1.25.12
 	mvdan.cc/gofumpt v0.7.0
 )
