@@ -18,7 +18,7 @@ require (
 	github.com/lestrrat-go/jwx v1.2.30
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oapi-codegen/fiber-middleware v1.0.2
-	github.com/openfga/go-sdk v0.6.1
+	github.com/openfga/go-sdk v0.6.2
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/zeiss/fiber-goth v1.2.13
