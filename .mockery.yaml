@@ -1,0 +1,5 @@
+inpackage: True
+with-expecter: true
+dir: mocks
+packages:
+testonly: True

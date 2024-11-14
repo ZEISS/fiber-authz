@@ -1,3 +1,4 @@
+
 before:
   hooks:
     - go mod tidy
@@ -6,11 +7,21 @@ builds:
 release:
   header: |
     ## Changelog ({{ .Date }})
-    
+
     Welcome to this new release! We hope you enjoy the changes we've made.
 changelog:
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+      - "^docs:"
+      - typo
+      - (?i)foo
