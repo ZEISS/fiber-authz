@@ -8,7 +8,7 @@ require (
 	github.com/air-verse/air v1.61.1
 	github.com/golangci/golangci-lint v1.62.2
 	github.com/goreleaser/goreleaser v1.26.2
-	github.com/vektra/mockery/v2 v2.49.2
+	github.com/vektra/mockery/v2 v2.50.0
 	gotest.tools/gotestsum v1.12.0
 	mvdan.cc/gofumpt v0.7.0
 )
