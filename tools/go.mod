@@ -8,7 +8,7 @@ require (
 	github.com/air-verse/air v1.61.7
 	github.com/golangci/golangci-lint v1.63.4
 	github.com/goreleaser/goreleaser v1.26.2
-	github.com/vektra/mockery/v2 v2.51.1
+	github.com/vektra/mockery/v2 v2.52.1
 	gotest.tools/gotestsum v1.12.0
 	mvdan.cc/gofumpt v0.7.0
 )
@@ -356,7 +356,7 @@ require (
 	github.com/raeperd/recvcheck v0.2.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	github.com/rs/zerolog v1.29.0 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryancurrah/gomodguard v1.3.5 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
