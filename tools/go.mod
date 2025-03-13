@@ -8,7 +8,7 @@ require (
 	github.com/golangci/golangci-lint v1.64.7
 	github.com/goreleaser/goreleaser v1.26.2
 	github.com/vektra/mockery/v2 v2.53.2
-	gotest.tools/gotestsum v1.12.0
+	gotest.tools/gotestsum v1.12.1
 	mvdan.cc/gofumpt v0.7.0
 )
 
