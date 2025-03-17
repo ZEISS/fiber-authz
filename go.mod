@@ -1,17 +1,18 @@
 module github.com/zeiss/fiber-authz
 
 go 1.22.1
-toolchain go1.23.3
+toolchain go1.24.1
 
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
-	github.com/getkin/kin-openapi v0.129.0
+	github.com/getkin/kin-openapi v0.130.0
 	github.com/go-playground/validator/v10 v10.25.0
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/katallaxie/pkg v0.6.6
 	github.com/lestrrat-go/jwx v1.2.30
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oapi-codegen/fiber-middleware v1.0.2
@@ -54,8 +55,8 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/oasdiff/yaml v0.0.0-20241210131133-6b86fb107d80 // indirect
-	github.com/oasdiff/yaml3 v0.0.0-20241210130736-a94c01f36349 // indirect
+	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
+	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -68,6 +69,8 @@ require (
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
