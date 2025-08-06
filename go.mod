@@ -12,7 +12,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/katallaxie/pkg v0.6.6
 	github.com/lestrrat-go/jwx v1.2.31
 	github.com/mitchellh/mapstructure v1.5.0
