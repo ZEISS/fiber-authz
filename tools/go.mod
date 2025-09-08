@@ -10,7 +10,7 @@ require (
 	github.com/goreleaser/goreleaser v1.26.2
 	github.com/vektra/mockery/v2 v2.53.5
 	gotest.tools/gotestsum v1.12.3
-	mvdan.cc/gofumpt v0.9.0
+	mvdan.cc/gofumpt v0.9.1
 )
 
 require (
