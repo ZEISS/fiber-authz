@@ -3,7 +3,7 @@ module tools
 go 1.25.0
 
 require (
-	github.com/air-verse/air v1.64.1
+	github.com/air-verse/air v1.64.2
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/goreleaser/goreleaser v1.26.2
 	github.com/vektra/mockery/v2 v2.53.5
