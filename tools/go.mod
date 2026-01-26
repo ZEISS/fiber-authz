@@ -3,7 +3,7 @@ module tools
 go 1.25.5
 
 require (
-	github.com/air-verse/air v1.64.3
+	github.com/air-verse/air v1.64.4
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/goreleaser/goreleaser v1.26.2
 	github.com/vektra/mockery/v2 v2.53.5
@@ -73,6 +73,7 @@ require (
 	github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a // indirect
 	github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb // indirect
 	github.com/anchore/quill v0.4.1 // indirect
+	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/ashanbrown/forbidigo v1.6.0 // indirect
 	github.com/ashanbrown/makezero v1.2.0 // indirect
