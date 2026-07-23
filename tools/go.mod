@@ -3,7 +3,7 @@ module tools
 go 1.26.0
 
 require (
-	github.com/air-verse/air v1.67.1
+	github.com/air-verse/air v1.67.2
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/goreleaser/goreleaser v1.26.2
 	github.com/vektra/mockery/v2 v2.53.6
@@ -238,7 +238,7 @@ require (
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gohugoio/hashstructure v0.6.0 // indirect
-	github.com/gohugoio/hugo v0.163.3 // indirect
+	github.com/gohugoio/hugo v0.164.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -377,7 +377,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -441,7 +441,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tdakkota/asciicheck v0.4.1 // indirect
 	github.com/tdewolff/parse/v2 v2.8.12 // indirect
-	github.com/tdewolff/test v1.0.12 // indirect
 	github.com/tetafro/godot v1.5.0 // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.4.2-0.20260407074541-7e8f69f906ef // indirect
@@ -489,18 +488,18 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	gocloud.dev v0.45.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
-	golang.org/x/mod v0.36.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.280.0 // indirect
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
