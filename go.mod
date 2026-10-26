@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/deepmap/oapi-codegen/v2 v2.1.0
-	github.com/getkin/kin-openapi v0.151.0
+	github.com/getkin/kin-openapi v0.152.0
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/gofiber/fiber/v2 v2.52.15
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -14,7 +14,7 @@ require (
 	github.com/katallaxie/pkg v0.6.6
 	github.com/lestrrat-go/jwx v1.2.31
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/oapi-codegen/fiber-middleware v1.1.0
+	github.com/oapi-codegen/fiber-middleware v1.2.0
 	github.com/openfga/go-sdk v0.8.3
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
