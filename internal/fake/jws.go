@@ -13,6 +13,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
+//nolint:gosec
 const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIOzvxuSyKba6j5FPvQCqaZgi5KMgKAAPE4Edy9faahy5oAoGCCqGSM49
 AwEHoUQDQgAE0enr2vXtwd7YoRFVNbpR9u7oHtb+aibaEhHHvR9/BdIHTyhIkwZp
@@ -26,15 +27,15 @@ const (
 	PermissionsClaim = "perm"
 )
 
-type FakeAuthenticator struct {
+type Authenticator struct {
 	PrivateKey *ecdsa.PrivateKey
 	KeySet     jwk.Set
 }
 
-var _ authz.JWSValidator = (*FakeAuthenticator)(nil)
+var _ authz.JWSValidator = (*Authenticator)(nil)
 
 // NewFakeAuthenticator ...
-func NewFakeAuthenticator() (*FakeAuthenticator, error) {
+func NewFakeAuthenticator() (*Authenticator, error) {
 	privKey, err := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("loading PEM private key: %w", err)
@@ -60,17 +61,17 @@ func NewFakeAuthenticator() (*FakeAuthenticator, error) {
 
 	set.Add(pubKey)
 
-	return &FakeAuthenticator{PrivateKey: privKey, KeySet: set}, nil
+	return &Authenticator{PrivateKey: privKey, KeySet: set}, nil
 }
 
 // ValidateJWS ...
-func (f *FakeAuthenticator) ValidateJWS(jwsString string) (jwt.Token, error) {
-	return jwt.Parse([]byte(jwsString), jwt.WithKeySet(f.KeySet),
+func (a *Authenticator) ValidateJWS(jwsString string) (jwt.Token, error) {
+	return jwt.Parse([]byte(jwsString), jwt.WithKeySet(a.KeySet),
 		jwt.WithAudience(FakeAudience), jwt.WithIssuer(FakeIssuer))
 }
 
 // SignToken ...
-func (f *FakeAuthenticator) SignToken(t jwt.Token) ([]byte, error) {
+func (a *Authenticator) SignToken(t jwt.Token) ([]byte, error) {
 	hdr := jws.NewHeaders()
 
 	if err := hdr.Set(jws.AlgorithmKey, jwa.ES256); err != nil {
@@ -85,12 +86,12 @@ func (f *FakeAuthenticator) SignToken(t jwt.Token) ([]byte, error) {
 		return nil, fmt.Errorf("setting Key ID: %w", err)
 	}
 
-	return jwt.Sign(t, jwa.ES256, f.PrivateKey, jwt.WithHeaders(hdr))
+	return jwt.Sign(t, jwa.ES256, a.PrivateKey, jwt.WithHeaders(hdr))
 }
 
 // CreateJWSWithClaims is a helper function to create JWT's with the specified
 // claims.
-func (f *FakeAuthenticator) CreateJWSWithClaims(claims []string) ([]byte, error) {
+func (a *Authenticator) CreateJWSWithClaims(claims []string) ([]byte, error) {
 	t := jwt.New()
 
 	err := t.Set(jwt.IssuerKey, FakeIssuer)
@@ -108,5 +109,5 @@ func (f *FakeAuthenticator) CreateJWSWithClaims(claims []string) ([]byte, error)
 		return nil, fmt.Errorf("setting permissions: %w", err)
 	}
 
-	return f.SignToken(t)
+	return a.SignToken(t)
 }

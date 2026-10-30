@@ -41,7 +41,7 @@ var cfg = &Config{
 }
 
 var rootCmd = &cobra.Command{
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return run(cmd.Context())
 	},
 }
@@ -60,7 +60,10 @@ func run(_ context.Context) error {
 	log.SetFlags(0)
 	log.SetOutput(os.Stderr)
 
-	logger.RedirectStdLog(logger.LogSink)
+	_, err := logger.RedirectStdLog(logger.LogSink)
+	if err != nil {
+		return err
+	}
 
 	fgaClient, err := client.NewSdkClient(&client.ClientConfiguration{
 		ApiUrl:               os.Getenv("FGA_API_URL"),  // required, e.g. https://api.fga.example

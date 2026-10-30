@@ -7,8 +7,6 @@ import (
 )
 
 func TestTeam(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name  string
 		team  *Team

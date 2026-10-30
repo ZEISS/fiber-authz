@@ -26,7 +26,10 @@ func main() {
 	}
 
 	log.Println(resp.Id)
-	fgaClient.SetStoreId(resp.Id)
+
+	if err := fgaClient.SetStoreId(resp.Id); err != nil {
+		panic(err)
+	}
 
 	// Read in example.json file into string.
 	model, err := os.ReadFile("./examples/fga/example.json")

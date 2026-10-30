@@ -10,22 +10,22 @@ import (
 
 const authzPrincipalFormat = "user:%s"
 
-var _ AuthzPrincipalResolver = (*GothAuthzPrincipalResolver)(nil)
+var _ PrincipalResolver = (*GothAuthzPrincipalResolver)(nil)
 
 // GothAuthzPrincipalResolver is the resolver that resolves the principal from the goth session.
 type GothAuthzPrincipalResolver struct{}
 
 // Resolve returns the principal from the goth session.
-func (g *GothAuthzPrincipalResolver) Resolve(c *fiber.Ctx) (AuthzPrincipal, error) {
+func (g *GothAuthzPrincipalResolver) Resolve(c *fiber.Ctx) (Principal, error) {
 	session, err := goth.SessionFromContext(c)
 	if err != nil && !errors.Is(err, goth.ErrMissingSession) {
-		return AuthzNoPrincipial, err
+		return NoPrincipial, err
 	}
 
-	return AuthzPrincipal(fmt.Sprintf(authzPrincipalFormat, session.User.Email)), nil
+	return Principal(fmt.Sprintf(authzPrincipalFormat, session.User.Email)), nil
 }
 
 // NewGothAuthzPrincipalResolver returns a new GothAuthzPrincipalResolver.
-func NewGothAuthzPrincipalResolver() AuthzPrincipalResolver {
+func NewGothAuthzPrincipalResolver() PrincipalResolver {
 	return &GothAuthzPrincipalResolver{}
 }

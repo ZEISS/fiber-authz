@@ -10,39 +10,39 @@ import (
 	middleware "github.com/oapi-codegen/fiber-middleware"
 )
 
-// ErrNoAuthzContext is the error returned when the context is not found.
-var ErrNoAuthzContext = errors.New("no authz context")
+// ErrNoContext is the error returned when the context is not found.
+var ErrNoContext = errors.New("no authz context")
 
-// AuthzContext is the type of the context key.
-type AuthzContext struct {
-	Principal AuthzPrincipal
-	Object    AuthzObject
-	Action    AuthzAction
+// Context is the type of the context key.
+type Context struct {
+	Principal Principal
+	Object    Object
+	Action    Action
 }
 
-// NewAuthzContext is the constructor for the AuthzContext.
-func NewAuthzContext(principal AuthzPrincipal, object AuthzObject, action AuthzAction) AuthzContext {
-	return AuthzContext{
+// NewContext is the constructor for the Context.
+func NewContext(principal Principal, object Object, action Action) Context {
+	return Context{
 		Principal: principal,
 		Object:    object,
 		Action:    action,
 	}
 }
 
-// AuthzExtractor is the interface that wraps the Extract method.
-type AuthzExtractor func(c *fiber.Ctx) (AuthzPrincipal, AuthzObject, AuthzAction, error)
+// Extractor is the interface that wraps the Extract method.
+type Extractor func(c *fiber.Ctx) (Principal, Object, Action, error)
 
-// DefaultAuthzExtractor is the default authz extractor.
-func DefaultAuthzExtractor(c *fiber.Ctx) (AuthzPrincipal, AuthzObject, AuthzAction, error) {
-	return AuthzNoPrincipial, AuthzNoObject, AuthzNoAction, nil
+// DefaultExtractor is the default authz extractor.
+func DefaultExtractor(_ *fiber.Ctx) (Principal, Object, Action, error) {
+	return NoPrincipial, NoObject, NoAction, nil
 }
 
 // OpenAPIAuthenticatorOpts are the OpenAPI authenticator options.
 type OpenAPIAuthenticatorOpts struct {
-	AuthzPrincipalResolver AuthzPrincipalResolver
-	AuthzObjectResolver    AuthzObjectResolver
-	AuthzActionResolver    AuthzActionResolver
-	AuthzChecker           AuthzChecker
+	AuthzPrincipalResolver PrincipalResolver
+	AuthzObjectResolver    ObjectResolver
+	AuthzActionResolver    ActionResolver
+	AuthzChecker           Checker
 }
 
 // Conigure the OpenAPI authenticator.
@@ -66,28 +66,28 @@ func OpenAPIAuthenticatorDefaultOpts() OpenAPIAuthenticatorOpts {
 }
 
 // WithAuthzPrincipalResolver sets the authz extractor.
-func WithAuthzPrincipalResolver(resolver AuthzPrincipalResolver) OpenAPIAuthenticatorOpt {
+func WithAuthzPrincipalResolver(resolver PrincipalResolver) OpenAPIAuthenticatorOpt {
 	return func(opts *OpenAPIAuthenticatorOpts) {
 		opts.AuthzPrincipalResolver = resolver
 	}
 }
 
 // WithAuthzObjectResolver sets the authz extractor.
-func WithAuthzObjectResolver(resolver AuthzObjectResolver) OpenAPIAuthenticatorOpt {
+func WithAuthzObjectResolver(resolver ObjectResolver) OpenAPIAuthenticatorOpt {
 	return func(opts *OpenAPIAuthenticatorOpts) {
 		opts.AuthzObjectResolver = resolver
 	}
 }
 
 // WithAuthzActionResolver sets the authz extractor.
-func WithAuthzActionResolver(resolver AuthzActionResolver) OpenAPIAuthenticatorOpt {
+func WithAuthzActionResolver(resolver ActionResolver) OpenAPIAuthenticatorOpt {
 	return func(opts *OpenAPIAuthenticatorOpts) {
 		opts.AuthzActionResolver = resolver
 	}
 }
 
 // WithAuthzChecker sets the authz checker.
-func WithAuthzChecker(checker AuthzChecker) OpenAPIAuthenticatorOpt {
+func WithAuthzChecker(checker Checker) OpenAPIAuthenticatorOpt {
 	return func(opts *OpenAPIAuthenticatorOpts) {
 		opts.AuthzChecker = checker
 	}
@@ -96,7 +96,7 @@ func WithAuthzChecker(checker AuthzChecker) OpenAPIAuthenticatorOpt {
 // NewOpenAPIErrorHandler creates a new OpenAPI error handler.
 func NewOpenAPIErrorHandler() middleware.ErrorHandler {
 	return func(c *fiber.Ctx, message string, statusCode int) {
-		c.Status(statusCode).JSON(map[string]interface{}{
+		c.Status(statusCode).JSON(map[string]any{
 			"message": message,
 			"code":    statusCode,
 		})
@@ -105,7 +105,7 @@ func NewOpenAPIErrorHandler() middleware.ErrorHandler {
 
 // NewOpenAPIAuthenticator creates a new OpenAPI authenticator.
 func NewOpenAPIAuthenticator(opts ...OpenAPIAuthenticatorOpt) openapi3filter.AuthenticationFunc {
-	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
+	return func(ctx context.Context, _ *openapi3filter.AuthenticationInput) error {
 		options := OpenAPIAuthenticatorDefaultOpts()
 		options.Conigure(opts...)
 
@@ -138,23 +138,22 @@ func NewOpenAPIAuthenticator(opts ...OpenAPIAuthenticatorOpt) openapi3filter.Aut
 		// Create a new context for the authz context.
 		usrCtx := c.UserContext()
 
-		authzCtx := NewAuthzContext(principal, object, action)
+		authzCtx := NewContext(principal, object, action)
 		authCtx := context.WithValue(usrCtx, authzContext, authzCtx)
 
-		// nolint: contextcheck
 		c.SetUserContext(authCtx)
 
 		return nil
 	}
 }
 
-// GetAuthzContext extracts the AuthzContext from the context.
-func GetAuthzContext(ctx context.Context) (AuthzContext, error) {
+// GetContext extracts the Context from the context.
+func GetContext(ctx context.Context) (Context, error) {
 	key := ctx.Value(authzContext)
 
 	if key == nil {
-		return AuthzContext{}, ErrNoAuthzContext
+		return Context{}, ErrNoContext
 	}
 
-	return key.(AuthzContext), nil
+	return key.(Context), nil
 }

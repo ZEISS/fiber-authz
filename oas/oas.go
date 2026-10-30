@@ -27,7 +27,7 @@ type NoopAuthenticator struct{}
 
 var _ Authenticator = (*NoopAuthenticator)(nil)
 
-func (n NoopAuthenticator) Authenticate(requestContext context.Context) (*AuthClaims, error) {
+func (n NoopAuthenticator) Authenticate(_ context.Context) (*AuthClaims, error) {
 	return &AuthClaims{
 		Subject: "",
 		Scopes:  nil,
@@ -98,7 +98,8 @@ func WithBasicAuthSchema(auth openapi3filter.AuthenticationFunc) AuthenticatorOp
 	return WithSchema("basic", auth)
 }
 
-// Authenticate returns a nil error and the AuthClaims info (if available) if the subject is authenticated or a
+// Authenticate returns a nil error and the AuthClaims info (if available) if the subject is authenticated
+// otherwise, it returns an error.
 func Authenticate(opts ...AuthenticatorOpt) openapi3filter.AuthenticationFunc {
 	options := DefaultAuthenticatorOpts()
 	options.Configure(opts...)

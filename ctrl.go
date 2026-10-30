@@ -2,41 +2,45 @@ package authz
 
 import "github.com/gofiber/fiber/v2"
 
-// AuthzController is the controller that holds the 3-factors to authenticate.
-type AuthzController interface {
+// Controller is the controller that holds the 3-factors to authenticate.
+type Controller interface {
 	// GetPrincipial returns the principal.
-	GetPrincipial(ctx *fiber.Ctx) (AuthzPrincipal, error)
+	GetPrincipial(ctx *fiber.Ctx) (Principal, error)
 	// GetObject returns the object.
-	GetObject(ctx *fiber.Ctx) (AuthzObject, error)
+	GetObject(ctx *fiber.Ctx) (Object, error)
 	// GetAction returns the action.
-	GetAction(ctx *fiber.Ctx) (AuthzAction, error)
+	GetAction(ctx *fiber.Ctx) (Action, error)
 }
 
-var _ AuthzController = (*DefaultAuthzController)(nil)
+var _ Controller = (*DefaultController)(nil)
 
-// DefaultAuthzController is the default implementation of the AuthzController.
-type DefaultAuthzController struct {
-	PrincipalResolver AuthzPrincipalResolver
-	ObjectResolver    AuthzObjectResolver
-	ActionResolver    AuthzActionResolver
+// DefaultController is the default implementation of the Controller.
+type DefaultController struct {
+	PrincipalResolver PrincipalResolver
+	ObjectResolver    ObjectResolver
+	ActionResolver    ActionResolver
 }
 
-// NewDefaultAuthzController returns a new DefaultAuthzController.
-func NewDefaultAuthzController(pr AuthzPrincipalResolver, or AuthzObjectResolver, ar AuthzActionResolver) *DefaultAuthzController {
-	return &DefaultAuthzController{}
+// NewDefaultController returns a new DefaultController.
+func NewDefaultController(pr PrincipalResolver, or ObjectResolver, ar ActionResolver) *DefaultController {
+	return &DefaultController{
+		PrincipalResolver: pr,
+		ObjectResolver:    or,
+		ActionResolver:    ar,
+	}
 }
 
 // GetPrincipial returns the principal.
-func (d *DefaultAuthzController) GetPrincipial(ctx *fiber.Ctx) (AuthzPrincipal, error) {
+func (d *DefaultController) GetPrincipial(ctx *fiber.Ctx) (Principal, error) {
 	return d.PrincipalResolver.Resolve(ctx)
 }
 
 // GetObject returns the object.
-func (d *DefaultAuthzController) GetObject(ctx *fiber.Ctx) (AuthzObject, error) {
+func (d *DefaultController) GetObject(ctx *fiber.Ctx) (Object, error) {
 	return d.ObjectResolver.Resolve(ctx)
 }
 
 // GetAction returns the action.
-func (d *DefaultAuthzController) GetAction(ctx *fiber.Ctx) (AuthzAction, error) {
+func (d *DefaultController) GetAction(ctx *fiber.Ctx) (Action, error) {
 	return d.ActionResolver.Resolve(ctx)
 }

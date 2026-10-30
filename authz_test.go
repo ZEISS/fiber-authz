@@ -20,7 +20,6 @@ func TestUnimplemented(t *testing.T) {
 
 func TestFakeChecker(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
 		name     string
 		allowed  bool
@@ -40,6 +39,7 @@ func TestFakeChecker(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			checker := NewFake(tt.allowed)
 			require.NotNil(t, checker)
 

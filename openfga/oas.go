@@ -123,12 +123,12 @@ func (f *OasFGAAuthzBuilder) BuildWithContext(ctx context.Context, input *openap
 }
 
 // BuildUser is a function that builds a user.
-func BuildUser(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) User {
+func BuildUser(ctx context.Context, _ *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) User {
 	return NewUser(Namespace(opts.User.Namespace), OidcSubject(ctx))
 }
 
 // Object ...
-func BuildObject(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Object {
+func BuildObject(_ context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Object {
 	ss := []string{}
 
 	for _, c := range opts.Object.Components {
@@ -145,8 +145,8 @@ func BuildObject(ctx context.Context, input *openapi3filter.AuthenticationInput,
 	return NewObject(Namespace(opts.Object.Namespace), String(opts.Object.Name), Join(opts.Object.Separator, ss...))
 }
 
-// BuildRelation ...
-func BuildRelation(ctx context.Context, input *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Relation {
+// BuildRelation is a function that builds a relation from the request.
+func BuildRelation(_ context.Context, _ *openapi3filter.AuthenticationInput, opts *OasFGAAuthzOptions) Relation {
 	return NewRelation(Namespace(opts.Relation.Namespace), String(opts.Relation.Name))
 }
 
@@ -162,7 +162,7 @@ type OasAuthenticateNextFunc func(context.Context, *openapi3filter.Authenticatio
 
 // DefaultOasAuthenticateNextFunc is the default next function for the authenticator.
 func DefaultOasAuthenticateNextFunc(name string) OasAuthenticateNextFunc {
-	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) bool {
+	return func(_ context.Context, input *openapi3filter.AuthenticationInput) bool {
 		_, ok := input.RequestValidationInput.Route.Operation.Extensions[name]
 
 		return !ok
@@ -213,7 +213,6 @@ func OasAuthenticate(opts ...OasAuthenticateOpt) openapi3filter.AuthenticationFu
 			return nil
 		}
 
-		// nolint:contextcheck
 		user, relation, object, err := options.Builder.BuildWithContext(c.UserContext(), input)
 		if err != nil {
 			return err
@@ -266,6 +265,6 @@ func PathParams(params map[string]string, name string, v ...string) string {
 }
 
 // QueryParams extracts the query parameter from the query parameters.
-func QueryParams(values url.Values, name string, v ...string) string {
+func QueryParams(values url.Values, name string, _ ...string) string {
 	return values.Get(name)
 }

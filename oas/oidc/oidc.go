@@ -37,7 +37,7 @@ var (
 	ErrInvalidSubject    = fiber.NewError(fiber.StatusUnauthorized, "subject is invalid")
 )
 
-// Validator is an interface for validating tokens
+// Validator is an interface for validating tokens.
 type Validator interface {
 	// Validate validates the provided token.
 	Validate(req *http.Request) (*oas.AuthClaims, error)
@@ -187,7 +187,8 @@ func (oidc *RemoteOidcValidator) GetConfiguration(ctx context.Context) (*oas.Oid
 	return oidcConfig, nil
 }
 
-// Authenticate returns a nil error and the AuthClaims info (if available) if the subject is authenticated or a
+// Authenticate returns a nil error and the AuthClaims info (if available) if the subject is authenticated
+// otherwise, it returns an error.
 func Authenticate(v Validator) openapi3filter.AuthenticationFunc {
 	return func(ctx context.Context, input *openapi3filter.AuthenticationInput) error {
 		c := middleware.GetFiberContext(ctx)
@@ -198,7 +199,7 @@ func Authenticate(v Validator) openapi3filter.AuthenticationFunc {
 		}
 
 		usrCtx := context.WithValue(c.UserContext(), jwtToken, principal)
-		// nolint:contextcheck
+		//nolint:contextcheck
 		c.SetUserContext(usrCtx)
 
 		return nil
@@ -206,7 +207,6 @@ func Authenticate(v Validator) openapi3filter.AuthenticationFunc {
 }
 
 // Validate validates the provided token.
-// nolint:gocyclo
 func (oidc *RemoteOidcValidator) Validate(req *http.Request) (*oas.AuthClaims, error) {
 	jwtParser := jwt.NewParser(
 		jwt.WithValidMethods([]string{"RS256"}),
@@ -234,9 +234,8 @@ func (oidc *RemoteOidcValidator) Validate(req *http.Request) (*oas.AuthClaims, e
 		return nil, ErrClaimsInvalid
 	}
 
-	validIssuers := []string{
-		oidc.Opts.MainIssuer,
-	}
+	validIssuers := make([]string, 0, len(oidc.Opts.IssuerAliases)+1)
+	validIssuers = append(validIssuers, oidc.Opts.MainIssuer)
 	validIssuers = append(validIssuers, oidc.Opts.IssuerAliases...)
 
 	ok = slices.ContainsFunc(validIssuers, func(issuer string) bool {
@@ -283,7 +282,7 @@ func (oidc *RemoteOidcValidator) Close() {
 	oidc.JWKs.EndBackground()
 }
 
-// GetJWSFromRequest extracts a JWS string from an Authorization: Bearer <jws> header
+// GetJWSFromRequest extracts a JWS string from an Authorization: Bearer <jws> header.
 func GetJWSFromRequest(req *http.Request) (string, error) {
 	authHdr := req.Header.Get("Authorization")
 	// Check for the Authorization header.

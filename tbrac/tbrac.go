@@ -30,10 +30,10 @@ func RunMigrations(db *gorm.DB) error {
 		return err
 	}
 
-	userRolesTableName := db.Config.NamingStrategy.TableName("user_roles")
-	apiKeyRolesTableName := db.Config.NamingStrategy.TableName("api_key_roles")
-	rolePermissionsTableName := db.Config.NamingStrategy.TableName("role_permissions")
-	permissionsTableName := db.Config.NamingStrategy.TableName("permissions")
+	userRolesTableName := db.NamingStrategy.TableName("user_roles")
+	apiKeyRolesTableName := db.NamingStrategy.TableName("api_key_roles")
+	rolePermissionsTableName := db.NamingStrategy.TableName("role_permissions")
+	permissionsTableName := db.NamingStrategy.TableName("permissions")
 
 	// View for user team permissions
 	query := db.Raw("SELECT A.user_id, A.team_id, C.scope as permission FROM " + userRolesTableName + " AS A LEFT JOIN " + rolePermissionsTableName + " AS B ON A.role_id = B.role_id LEFT JOIN " + permissionsTableName + " AS C on B.permission_id = C.id;")
@@ -204,25 +204,25 @@ type APIKeyRole struct {
 }
 
 var (
-	_ authz.AuthzChecker = (*tbac)(nil)
-	_ adapters.Adapter   = (*tbac)(nil)
+	_ authz.Checker    = (*TBAC)(nil)
+	_ adapters.Adapter = (*TBAC)(nil)
 )
 
-type tbac struct {
+type TBAC struct {
 	db *gorm.DB
 
 	adapters.UnimplementedAdapter
 }
 
 // NewTBAC returns a new TBAC authz checker.
-func NewTBAC(db *gorm.DB) *tbac {
-	return &tbac{
+func NewTBAC(db *gorm.DB) *TBAC {
+	return &TBAC{
 		db: db,
 	}
 }
 
 // Allowed is a method that returns true if the principal is allowed to perform the action on the user.
-func (t *tbac) Allowed(ctx context.Context, principal authz.AuthzPrincipal, object authz.AuthzObject, action authz.AuthzAction) (bool, error) {
+func (t *TBAC) Allowed(ctx context.Context, principal authz.Principal, object authz.Object, action authz.Action) (bool, error) {
 	var allowed int64
 
 	team := t.db.WithContext(ctx).Model(&Team{}).Select("id").Where("slug = ?", object)
@@ -240,13 +240,13 @@ func (t *tbac) Allowed(ctx context.Context, principal authz.AuthzPrincipal, obje
 }
 
 // Resolve ...
-func (t *tbac) Resolve(c *fiber.Ctx) (authz.AuthzObject, error) {
-	return authz.AuthzObject(c.Params("team")), nil
+func (t *TBAC) Resolve(c *fiber.Ctx) (authz.Object, error) {
+	return authz.Object(c.Params("team")), nil
 }
 
 // CreateUser ...
-func (a *tbac) CreateUser(ctx context.Context, user adapters.GothUser) (adapters.GothUser, error) {
-	err := a.db.WithContext(ctx).FirstOrCreate(&user).Error
+func (t *TBAC) CreateUser(ctx context.Context, user adapters.GothUser) (adapters.GothUser, error) {
+	err := t.db.WithContext(ctx).FirstOrCreate(&user).Error
 	if err != nil {
 		return adapters.GothUser{}, err
 	}
@@ -255,9 +255,9 @@ func (a *tbac) CreateUser(ctx context.Context, user adapters.GothUser) (adapters
 }
 
 // GetSession is a helper function to retrieve a session by session token.
-func (a *tbac) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
+func (t *TBAC) GetSession(ctx context.Context, sessionToken string) (adapters.GothSession, error) {
 	var session adapters.GothSession
-	err := a.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
+	err := t.db.WithContext(ctx).Preload("User").Where("session_token = ?", sessionToken).First(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, err
 	}
@@ -266,9 +266,9 @@ func (a *tbac) GetSession(ctx context.Context, sessionToken string) (adapters.Go
 }
 
 // GetUser is a helper function to retrieve a user by ID.
-func (a *tbac) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothUser, error) {
+func (t *TBAC) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothUser, error) {
 	var user adapters.GothUser
-	err := a.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
+	err := t.db.WithContext(ctx).Preload("Accounts").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return adapters.GothUser{}, err
 	}
@@ -277,9 +277,9 @@ func (a *tbac) GetUser(ctx context.Context, id uuid.UUID) (adapters.GothUser, er
 }
 
 // CreateSession is a helper function to create a new session.
-func (a *tbac) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
+func (t *TBAC) CreateSession(ctx context.Context, userID uuid.UUID, expires time.Time) (adapters.GothSession, error) {
 	session := adapters.GothSession{UserID: userID, SessionToken: uuid.NewString(), ExpiresAt: expires}
-	err := a.db.WithContext(ctx).Create(&session).Error
+	err := t.db.WithContext(ctx).Create(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, err
 	}
@@ -288,13 +288,13 @@ func (a *tbac) CreateSession(ctx context.Context, userID uuid.UUID, expires time
 }
 
 // DeleteSession is a helper function to delete a session by session token.
-func (a *tbac) DeleteSession(ctx context.Context, sessionToken string) error {
-	return a.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.GothSession{}).Error
+func (t *TBAC) DeleteSession(ctx context.Context, sessionToken string) error {
+	return t.db.WithContext(ctx).Where("session_token = ?", sessionToken).Delete(&adapters.GothSession{}).Error
 }
 
 // RefreshSession is a helper function to refresh a session.
-func (a *tbac) RefreshSession(ctx context.Context, session adapters.GothSession) (adapters.GothSession, error) {
-	err := a.db.WithContext(ctx).Model(&adapters.GothSession{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
+func (t *TBAC) RefreshSession(ctx context.Context, session adapters.GothSession) (adapters.GothSession, error) {
+	err := t.db.WithContext(ctx).Model(&adapters.GothSession{}).Where("session_token = ?", session.SessionToken).Updates(&session).Error
 	if err != nil {
 		return adapters.GothSession{}, err
 	}
@@ -303,11 +303,11 @@ func (a *tbac) RefreshSession(ctx context.Context, session adapters.GothSession)
 }
 
 // DeleteUser ...
-func (a *tbac) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	return a.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.GothUser{}).Error
+func (t *TBAC) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return t.db.WithContext(ctx).Where("id = ?", id).Delete(&adapters.GothUser{}).Error
 }
 
 // LinkAccount ...
-func (a *tbac) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
-	return a.db.WithContext(ctx).Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
+func (t *TBAC) LinkAccount(ctx context.Context, accountID, userID uuid.UUID) error {
+	return t.db.WithContext(ctx).Model(&adapters.GothAccount{}).Where("id = ?", accountID).Update("user_id", userID).Error
 }

@@ -10,58 +10,58 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// AuthzPrincipal is the subject.
-type AuthzPrincipal string
+// Principal is the subject.
+type Principal string
 
 // String is the stringer implementation.
-func (a AuthzPrincipal) String() string {
+func (a Principal) String() string {
 	return string(a)
 }
 
-// AuthzObject is the object.
-type AuthzObject string
+// Object is the object.
+type Object string
 
 // String is the stringer implementation.
-func (a AuthzObject) String() string {
+func (a Object) String() string {
 	return string(a)
 }
 
-// AuthzAction is the action.
-type AuthzAction string
+// Action is the action.
+type Action string
 
 // String is the stringer implementation.
-func (a AuthzAction) String() string {
+func (a Action) String() string {
 	return string(a)
 }
 
 const (
-	AuthzNoPrincipial AuthzPrincipal = ""
-	AuthzNoObject     AuthzObject    = ""
-	AuthzNoAction     AuthzAction    = ""
+	NoPrincipial Principal = ""
+	NoObject     Object    = ""
+	NoAction     Action    = ""
 )
 
-// AuthzParams is the struct that holds the principal, object and action from the context.
+// Params is the struct that holds the principal, object and action from the context.
 // There needs to be a :principal, :object and :action in the context.
-type AuthzParams struct {
+type Params struct {
 	// Principal is the subject.
-	Principal AuthzPrincipal `json:"principal" params:"principal" query:"principal" form:"principal"`
+	Principal Principal `json:"principal" params:"principal" query:"principal" form:"principal"`
 	// Object is the object.
-	Object AuthzObject `json:"object" params:"object" query:"object" form:"object"`
+	Object Object `json:"object" params:"object" query:"object" form:"object"`
 	// Action is the action.
-	Action AuthzAction `json:"action" params:"action" query:"action" form:"action"`
+	Action Action `json:"action" params:"action" query:"action" form:"action"`
 }
 
-// AuthzChecker is the interface that wraps the Allowed method.
-type AuthzChecker interface {
+// Checker is the interface that wraps the Allowed method.
+type Checker interface {
 	// Allowed ...
-	Allowed(context.Context, AuthzPrincipal, AuthzObject, AuthzAction) (bool, error)
+	Allowed(context.Context, Principal, Object, Action) (bool, error)
 }
 
 // The contextKey type is unexported to prevent collisions with context keys defined in
 // other packages.
 type contextKey int
 
-// The keys for the values in context
+// The keys for the values in context.
 const (
 	authzPrincipial contextKey = iota
 	authzObject
@@ -73,11 +73,11 @@ const (
 type Unimplemented struct{}
 
 // Allowed is the default implementation.
-func (u *Unimplemented) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzObject, _ AuthzAction) (bool, error) {
+func (u *Unimplemented) Allowed(_ context.Context, _ Principal, _ Object, _ Action) (bool, error) {
 	return false, nil
 }
 
-var _ AuthzChecker = (*Fake)(nil)
+var _ Checker = (*Fake)(nil)
 
 // Fake is a fake authz checker.
 type Fake struct {
@@ -90,7 +90,7 @@ func NewFake(allowed bool) *Fake {
 }
 
 // Allowed returns true if the principal is allowed to perform the action on the object.
-func (f *Fake) Allowed(_ context.Context, _ AuthzPrincipal, _ AuthzObject, _ AuthzAction) (bool, error) {
+func (f *Fake) Allowed(_ context.Context, _ Principal, _ Object, _ Action) (bool, error) {
 	return f.allowd, nil
 }
 
@@ -100,16 +100,16 @@ type Config struct {
 	Next func(c *fiber.Ctx) bool
 
 	// Checker is implementing the AuthzChecker interface.
-	Checker AuthzChecker
+	Checker Checker
 
 	// ObjectResolver is the object resolver.
-	ObjectResolver AuthzObjectResolver
+	ObjectResolver ObjectResolver
 
 	// ActionResolver is the action resolver.
-	ActionResolver AuthzActionResolver
+	ActionResolver ActionResolver
 
 	// PrincipalResolver is the principal resolver.
-	PrincipalResolver AuthzPrincipalResolver
+	PrincipalResolver PrincipalResolver
 
 	// ErrorHandler is executed when an error is returned from fiber.Handler.
 	//
@@ -126,27 +126,27 @@ var ConfigDefault = Config{
 	Checker:           NewNoop(),
 }
 
-// default ErrorHandler that process return error from fiber.Handler
+// default ErrorHandler that process return error from fiber.Handler.
 func defaultErrorHandler(_ *fiber.Ctx, _ error) error {
 	return fiber.ErrBadRequest
 }
 
-// AuthzObjectResolver is the interface that wraps the Resolve method.
-type AuthzObjectResolver interface {
+// ObjectResolver is the interface that wraps the Resolve method.
+type ObjectResolver interface {
 	// Resolve ...
-	Resolve(c *fiber.Ctx) (AuthzObject, error)
+	Resolve(c *fiber.Ctx) (Object, error)
 }
 
-// AuthzPrincipalResolver is the interface that wraps the Resolve method.
-type AuthzPrincipalResolver interface {
+// PrincipalResolver is the interface that wraps the Resolve method.
+type PrincipalResolver interface {
 	// Resolve ...
-	Resolve(c *fiber.Ctx) (AuthzPrincipal, error)
+	Resolve(c *fiber.Ctx) (Principal, error)
 }
 
-// AuthzActionResolver is the interface that wraps the Resolve method.
-type AuthzActionResolver interface {
+// ActionResolver is the interface that wraps the Resolve method.
+type ActionResolver interface {
 	// Resolve ...
-	Resolve(c *fiber.Ctx) (AuthzAction, error)
+	Resolve(c *fiber.Ctx) (Action, error)
 }
 
 // Authenticate is a middleware that sets the principal and user in the context.
@@ -196,9 +196,9 @@ func NewCheckerHandler(config ...Config) fiber.Handler {
 		}
 
 		payload := struct {
-			Principal  AuthzPrincipal `json:"principal"`
-			Object     AuthzObject    `json:"object"`
-			Permission AuthzAction    `json:"action"`
+			Principal  Principal `json:"principal"`
+			Object     Object    `json:"object"`
+			Permission Action    `json:"action"`
 		}{}
 
 		if err := c.BodyParser(&payload); err != nil {
@@ -218,7 +218,7 @@ func NewCheckerHandler(config ...Config) fiber.Handler {
 	}
 }
 
-// Helper function to set default values
+// Helper function to set default values.
 func configDefault(config ...Config) Config {
 	if len(config) < 1 {
 		return ConfigDefault
@@ -253,35 +253,35 @@ func configDefault(config ...Config) Config {
 type noopObjectResolver struct{}
 
 // Resolve ...
-func (n *noopObjectResolver) Resolve(c *fiber.Ctx) (AuthzObject, error) {
-	return AuthzNoObject, nil
+func (n *noopObjectResolver) Resolve(_ *fiber.Ctx) (Object, error) {
+	return NoObject, nil
 }
 
 // NewNoopObjectResolver ...
-func NewNoopObjectResolver() AuthzObjectResolver {
+func NewNoopObjectResolver() ObjectResolver {
 	return &noopObjectResolver{}
 }
 
 type noopPrincipalResolver struct{}
 
 // Resolve ...
-func (n *noopPrincipalResolver) Resolve(c *fiber.Ctx) (AuthzPrincipal, error) {
-	return AuthzNoPrincipial, nil
+func (n *noopPrincipalResolver) Resolve(_ *fiber.Ctx) (Principal, error) {
+	return NoPrincipial, nil
 }
 
 // NewNoopPrincipalResolver ...
-func NewNoopPrincipalResolver() AuthzPrincipalResolver {
+func NewNoopPrincipalResolver() PrincipalResolver {
 	return &noopPrincipalResolver{}
 }
 
 type noopActionResolver struct{}
 
 // Resolve ...
-func (n *noopActionResolver) Resolve(c *fiber.Ctx) (AuthzAction, error) {
-	return AuthzNoAction, nil
+func (n *noopActionResolver) Resolve(_ *fiber.Ctx) (Action, error) {
+	return NoAction, nil
 }
 
 // NewNoopActionResolver ...
-func NewNoopActionResolver() AuthzActionResolver {
+func NewNoopActionResolver() ActionResolver {
 	return &noopActionResolver{}
 }
