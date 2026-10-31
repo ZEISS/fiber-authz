@@ -17,6 +17,11 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
+const (
+	// OIDCDiscoveryEndpoint is the endpoint that serves the OIDC discovery document
+	OIDCDiscoveryEndpoint = "/.well-known/openid-configuration"
+)
+
 // DefaultTimeout is the default timeout for the Perplexity API.
 const DefaultTimeout = 30 * time.Second
 
@@ -27,18 +32,28 @@ var DefaultClient = &http.Client{
 
 var jwkRefreshInterval = 48 * time.Hour
 
-// OIDCConfig holds the OIDC configuration.
-type OIDCConfig struct {
+// WellknownConfig holds the well-known OIDC configuration.
+type WellknownConfig struct {
 	// Issuer is the OIDC issuer URL.
 	Issuer string `json:"issuer"`
 	// JWKsURI is the URI of the JWKS.
 	JWKsURI string `json:"jwks_uri"`
+	// TokenEndpoint is the URI of the token endpoint.
+	TokenEndpoint string `json:"token_endpoint"`
+	// AuthorizationEndpoint is the URI of the authorization endpoint.
+	AuthorizationEndpoint string `json:"authorization_endpoint"`
+	// UserInfoEndpoint is the URI of the user info endpoint.
+	UserInfoEndpoint string `json:"userinfo_endpoint"`
+	// DeviceAuthorizationEndpoint is the URI of the device authorization endpoint.
+	DeviceAuthorizationEndpoint string `json:"device_authorization_endpoint"`
+	// IntrospectionEndpoint is the URI of the introspection endpoint.
+	IntrospectionEndpoint string `json:"introspection_endpoint"`
 }
 
 // HumanOpts holds the OIDC configuration for the Huma middleware.
 type HumanOpts struct {
-	// Issuer is the OIDC issuer URL.
-	Issuer string `json:"issuer"`
+	// WellKnownConfig holds the well-known OIDC configuration.
+	WellKnownConfig *WellknownConfig `json:"well_known_config"`
 	// Audience is the OIDC audience.
 	Audience string `json:"audience"`
 	// Client is the HTTP client to use for fetching the JWKS.
@@ -55,23 +70,24 @@ func HumanDefaults() *HumanOpts {
 	client.Logger = nil
 
 	return &HumanOpts{
-		Issuer:   "",
-		Audience: "",
-		Client:   client,
+		Audience:        "",
+		WellKnownConfig: &WellknownConfig{},
+		Client:          client,
 	}
 }
 
-// GetKeys fetches the JWKS from the given URI using the provided HTTP client.
-func GetKeys(client *http.Client, jwksURI string) (*keyfunc.JWKS, error) {
-	jwks, err := keyfunc.Get(jwksURI, keyfunc.Options{
-		Client:          client,
-		RefreshInterval: jwkRefreshInterval,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error fetching keys from %v: %w", jwksURI, err)
+// WithAudience returns an option that sets the OIDC audience.
+func WithAudience(audience string) HumanOpt {
+	return func(opts *HumanOpts) {
+		opts.Audience = audience
 	}
+}
 
-	return jwks, nil
+// WithWellknownConfig returns an option that sets the well-known OIDC configuration.
+func WithWellknownConfig(config *WellknownConfig) HumanOpt {
+	return func(opts *HumanOpts) {
+		opts.WellKnownConfig = config
+	}
 }
 
 // NewAuthMiddleware returns a middleware that validates OIDC tokens.
@@ -82,17 +98,9 @@ func NewHumanMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, n
 	}
 
 	var JWKs *keyfunc.JWKS
-	var JwksURI string
 
 	return func(ctx huma.Context, next func(huma.Context)) {
-		oidcConfig, err := GetConfiguration(ctx.Context(), config.Client, config.Issuer)
-		if err != nil {
-			huma.WriteErr(api, ctx, http.StatusInternalServerError, "Internal Server Error")
-			return
-		}
-
-		JwksURI = oidcConfig.JWKsURI
-		jwks, err := GetKeys(config.Client.StandardClient(), JwksURI)
+		jwks, err := GetKeys(config.Client.StandardClient(), config.WellKnownConfig.JWKsURI)
 		if err != nil {
 			huma.WriteErr(api, ctx, http.StatusInternalServerError, "Internal Server Error")
 			return
@@ -128,7 +136,7 @@ func NewHumanMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, n
 		}
 
 		validIssuers := make([]string, 0, 1)
-		validIssuers = append(validIssuers, config.Issuer)
+		validIssuers = append(validIssuers, config.WellKnownConfig.Issuer)
 
 		ok = slices.ContainsFunc(validIssuers, func(issuer string) bool {
 			v := jwt.NewValidator(jwt.WithIssuer(issuer))
@@ -150,9 +158,22 @@ func NewHumanMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, n
 	}
 }
 
+// GetKeys fetches the JWKS from the given URI using the provided HTTP client.
+func GetKeys(client *http.Client, jwksURI string) (*keyfunc.JWKS, error) {
+	jwks, err := keyfunc.Get(jwksURI, keyfunc.Options{
+		Client:          client,
+		RefreshInterval: jwkRefreshInterval,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error fetching keys from %v: %w", jwksURI, err)
+	}
+
+	return jwks, nil
+}
+
 // GetConfiguration fetches the OIDC configuration from the given URL using the provided HTTP client.
-func GetConfiguration(ctx context.Context, client *retryablehttp.Client, url string) (*OIDCConfig, error) {
-	wellKnown := strings.TrimSuffix(url, "/") + "/.well-known/openid-configuration"
+func GetConfiguration(ctx context.Context, client *retryablehttp.Client, url string) (*WellknownConfig, error) {
+	wellKnown := strings.TrimSuffix(url, "/") + OIDCDiscoveryEndpoint
 
 	req, err := retryablehttp.NewRequestWithContext(ctx, "GET", wellKnown, nil)
 	if err != nil {
@@ -174,18 +195,18 @@ func GetConfiguration(ctx context.Context, client *retryablehttp.Client, url str
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
-	oidcConfig := &OIDCConfig{}
-	if err := json.Unmarshal(body, oidcConfig); err != nil {
+	wellKnownConfig := &WellknownConfig{}
+	if err := json.Unmarshal(body, wellKnownConfig); err != nil {
 		return nil, fmt.Errorf("failed parsing document: %w", err)
 	}
 
-	if oidcConfig.Issuer == "" {
+	if wellKnownConfig.Issuer == "" {
 		return nil, errors.New("missing issuer value")
 	}
 
-	if oidcConfig.JWKsURI == "" {
+	if wellKnownConfig.JWKsURI == "" {
 		return nil, errors.New("missing jwks_uri value")
 	}
 
-	return oidcConfig, nil
+	return wellKnownConfig, nil
 }
