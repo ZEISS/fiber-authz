@@ -65,14 +65,9 @@ type HumanOpt func(*HumanOpts)
 
 // HumanDefaults returns the default configuration for the Huma middleware.
 func HumanDefaults() *HumanOpts {
-	client := retryablehttp.NewClient()
-	client.HTTPClient = DefaultClient
-	client.Logger = nil
-
 	return &HumanOpts{
 		Audience:        "",
 		WellKnownConfig: &WellknownConfig{},
-		Client:          client,
 	}
 }
 
@@ -87,6 +82,13 @@ func WithAudience(audience string) HumanOpt {
 func WithWellknownConfig(config *WellknownConfig) HumanOpt {
 	return func(opts *HumanOpts) {
 		opts.WellKnownConfig = config
+	}
+}
+
+// WithClient returns an option that sets the HTTP client.
+func WithClient(client *retryablehttp.Client) HumanOpt {
+	return func(opts *HumanOpts) {
+		opts.Client = client
 	}
 }
 
