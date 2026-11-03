@@ -22,13 +22,8 @@ const (
 	OIDCDiscoveryEndpoint = "/.well-known/openid-configuration"
 )
 
-// DefaultTimeout is the default timeout for the Perplexity API.
-const DefaultTimeout = 30 * time.Second
-
 // DefaultClient is the default HTTP client for the Perplexity API.
-var DefaultClient = &http.Client{
-	Timeout: DefaultTimeout,
-}
+var DefaultClient = retryablehttp.NewClient()
 
 var jwkRefreshInterval = 48 * time.Hour
 
@@ -68,6 +63,7 @@ func HumanDefaults() *HumanOpts {
 	return &HumanOpts{
 		Audience:        "",
 		WellKnownConfig: &WellknownConfig{},
+		Client:          DefaultClient,
 	}
 }
 
