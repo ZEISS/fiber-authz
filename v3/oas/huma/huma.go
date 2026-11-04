@@ -18,9 +18,12 @@ import (
 )
 
 const (
-	// OIDCDiscoveryEndpoint is the endpoint that serves the OIDC discovery document
-	OIDCDiscoveryEndpoint = "/.well-known/openid-configuration"
+	// OidcDiscoveryEndpoint is the endpoint that serves the OIDC discovery document
+	OidcDiscoveryEndpoint = "/.well-known/openid-configuration"
 )
+
+// OidcTokenKey is the key used to extract the OIDC token from the request
+const OidcTokenKey = iota
 
 // DefaultClient is the default HTTP client for the Perplexity API.
 var DefaultClient = retryablehttp.NewClient()
@@ -152,6 +155,8 @@ func NewHumanMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, n
 			return
 		}
 
+		ctx = huma.WithValue(ctx, OidcTokenKey, token)
+
 		next(ctx)
 	}
 }
@@ -171,7 +176,7 @@ func GetKeys(client *http.Client, jwksURI string) (*keyfunc.JWKS, error) {
 
 // GetConfiguration fetches the OIDC configuration from the given URL using the provided HTTP client.
 func GetConfiguration(ctx context.Context, client *retryablehttp.Client, url string) (*WellknownConfig, error) {
-	wellKnown := strings.TrimSuffix(url, "/") + OIDCDiscoveryEndpoint
+	wellKnown := strings.TrimSuffix(url, "/") + OidcDiscoveryEndpoint
 
 	req, err := retryablehttp.NewRequestWithContext(ctx, "GET", wellKnown, nil)
 	if err != nil {
