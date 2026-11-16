@@ -48,6 +48,9 @@ type WellknownConfig struct {
 	IntrospectionEndpoint string `json:"introspection_endpoint"`
 }
 
+// Validator is a function that validates the OIDC configuration.
+type Validator func(ctx huma.Context) (bool, error)
+
 // HumanOpts holds the OIDC configuration for the Huma middleware.
 type HumanOpts struct {
 	// WellKnownConfig holds the well-known OIDC configuration.
@@ -56,6 +59,8 @@ type HumanOpts struct {
 	Audience string `json:"audience"`
 	// Client is the HTTP client to use for fetching the JWKS.
 	Client *retryablehttp.Client `json:"-"`
+	// Validators is a slice of functions to validate the OIDC configuration.
+	Validators []Validator `json:"-"`
 }
 
 // HumanOpt is the configuration for the Huma middleware.
@@ -67,6 +72,7 @@ func HumanDefaults() *HumanOpts {
 		Audience:        "",
 		WellKnownConfig: &WellknownConfig{},
 		Client:          DefaultClient,
+		Validators:      []Validator{},
 	}
 }
 
@@ -91,8 +97,15 @@ func WithClient(client *retryablehttp.Client) HumanOpt {
 	}
 }
 
-// NewAuthMiddleware returns a middleware that validates OIDC tokens.
-func NewHumanMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, next func(huma.Context)) {
+// WithValidators returns an option that sets the OIDC configuration validators.
+func WithValidators(validators ...Validator) HumanOpt {
+	return func(opts *HumanOpts) {
+		opts.Validators = append(opts.Validators, validators...)
+	}
+}
+
+// NewHumaMiddleware returns a middleware that validates OIDC tokens.
+func NewHumaMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, next func(huma.Context)) {
 	config := HumanDefaults()
 	for _, opt := range opts {
 		opt(config)
@@ -156,6 +169,13 @@ func NewHumanMiddleware(api huma.API, opts ...HumanOpt) func(ctx huma.Context, n
 		}
 
 		ctx = huma.WithValue(ctx, OidcTokenKey, token)
+
+		for _, validator := range config.Validators {
+			if ok, err := validator(ctx); !ok || err != nil {
+				huma.WriteErr(api, ctx, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+		}
 
 		next(ctx)
 	}
