@@ -11,8 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	ll "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
-	"github.com/katallaxie/pkg/logger"
 	"github.com/spf13/cobra"
+	"github.com/zeiss/pkg/logx"
 )
 
 // Config ...
@@ -60,7 +60,7 @@ func run(_ context.Context) error {
 	log.SetFlags(0)
 	log.SetOutput(os.Stderr)
 
-	_, err := logger.RedirectStdLog(logger.LogSink)
+	_, err := logx.RedirectStdLog(logx.LogSink)
 	if err != nil {
 		return err
 	}

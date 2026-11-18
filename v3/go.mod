@@ -8,10 +8,10 @@ require (
 	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/hashicorp/go-retryablehttp v0.7.8
+	github.com/zeiss/pkg v0.2.4
 )
 
 require (
-	github.com/fatih/color v1.19.0 // indirect
 	github.com/gofiber/schema v1.9.3 // indirect
 	github.com/gofiber/utils/v2 v2.6.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
