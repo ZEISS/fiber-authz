@@ -15,7 +15,7 @@ func HasEmail(ctx huma.Context) (bool, error) {
 		return false, err
 	}
 
-	return utilx.Empty(email), nil
+	return utilx.NotEmpty(email), nil
 }
 
 // GetClaim returns the value of the given claim from the token.
