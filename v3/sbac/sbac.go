@@ -128,7 +128,6 @@ type Role struct {
 // Validate validates the role.
 func (r *Role) Validate() error {
 	validate = validator.New()
-
 	return validate.Struct(r)
 }
 
